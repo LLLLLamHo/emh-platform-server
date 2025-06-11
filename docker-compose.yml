@@ -1,0 +1,29 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - '27081:80'
+    container_name: wxcloud_wxcloudrun-koa
+    labels:
+      - wxPort=27082
+      - hostPort=27081
+      - wxcloud=wxcloudrun-koa
+      - role=container
+    environment:
+      - MYSQL_USERNAME=
+      - MYSQL_PASSWORD=
+      - MYSQL_ADDRESS=
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=8aQgUsyR
+      - MYSQL_ADDRESS=sh-cynosdbmysql-grp-hgsj26pk.sql.tencentcdb.com:23978
+      - MYSQL_ADDRESS=10.1.105.187:3306
+networks:
+  default:
+    external:
+      name: wxcb0
