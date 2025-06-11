@@ -3,8 +3,10 @@ import logger from 'koa-logger';
 import bodyParser from 'koa-bodyparser';
 import { initDB } from './db';
 import { registerRouter } from './router';
+import dotenv from 'dotenv';
 
-
+const envPaths = ['.env', '.env.local'];
+dotenv.config({ path: envPaths, override: true });
 const port = process.env.PORT || 80;
 
 async function bootstrap() {

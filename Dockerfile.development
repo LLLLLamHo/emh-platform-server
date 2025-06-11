@@ -11,4 +11,4 @@ RUN npm install
 COPY . /app
 RUN npm run build
 
-CMD [ "nodemon", "-x", "npm start", "-w", "/app", "-e", "java, js, mjs, json, ts, cs, py, go"  ]
+CMD [ "npm", "run", "dev" ]

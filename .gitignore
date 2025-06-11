@@ -107,4 +107,4 @@ dist
 
 built/
 
-docker-compose.yml
+.env.*

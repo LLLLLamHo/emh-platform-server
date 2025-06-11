@@ -11,3 +11,5 @@ export function createCounterModule(sequelize: Sequelize) {
 
   return counter;
 }
+
+
