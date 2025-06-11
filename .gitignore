@@ -106,3 +106,5 @@ dist
 .cloudbase/
 
 built/
+
+docker-compose.yml
