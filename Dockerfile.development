@@ -9,5 +9,6 @@ COPY package*.json /app
 RUN npm config set registry https://mirrors.cloud.tencent.com/npm/
 RUN npm install
 COPY . /app
+RUN npm run build
 
-CMD [ "npm", "run", "dev" ]
+CMD [ "nodemon", "-x", "npm start", "-w", "/app", "-e", "java, js, mjs, json, ts, cs, py, go"  ]
