@@ -2119,6 +2119,14 @@ koa-logger@^3.2.1:
     humanize-number "0.0.2"
     passthrough-counter "^1.0.0"
 
+koa-onerror@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.npmjs.org/koa-onerror/-/koa-onerror-5.0.1.tgz#b2d2c3674e1338ca8c0061bed819b44a94e186e3"
+  integrity sha512-mSdakWWkZASupPZe661zhSwa/szIvskdmNpLn9gRmrcI2iktDDLi+u0c6KuG6mI6E6Fh8btVMdx0u40/2IvxQw==
+  dependencies:
+    escape-html "^1.0.3"
+    stream-wormhole "^2.0.1"
+
 koa-router@^10.1.1:
   version "10.1.1"
   resolved "https://registry.npmjs.org/koa-router/-/koa-router-10.1.1.tgz#20809f82648518b84726cd445037813cd99f17ff"
@@ -2852,6 +2860,11 @@ stop-iteration-iterator@^1.1.0:
   dependencies:
     es-errors "^1.3.0"
     internal-slot "^1.1.0"
+
+stream-wormhole@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.npmjs.org/stream-wormhole/-/stream-wormhole-2.0.1.tgz#fc09a0b75c4e08417e6a5fcaf23ebea8c408bf80"
+  integrity sha512-B31SiV7tNxOGqvC367O1dVL4nWBgCT7xqtHtikvxUkrbxgvtUemYc6WyO8+Z5cLW8/HUvYmNkgZIjTXYLIDYVw==
 
 string-width@^4.2.3:
   version "4.2.3"

@@ -17,15 +17,7 @@
     "allowJs": true,
     "declaration": true,
     "esModuleInterop": true,
-    "sourceMap": true,
-    "paths": {
-      "@/request": [
-        "./src/mock-request"
-      ],
-      "@/request/*": [
-        "./src/mock-request/*"
-      ]
-    },
+    "sourceMap": true
   },
   "include": [
     "src",
