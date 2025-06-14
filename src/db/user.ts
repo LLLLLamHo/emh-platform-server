@@ -11,12 +11,13 @@ export interface UserAttributes {
   phone?: number | null;
   gender: number;
   freeze: number;
+  avatar?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 // 2. 定义创建时可选的字段（比如自增id，createdAt等）
-export type UserCreationAttributes = Optional<UserAttributes, 'id' | 'unionid' | 'phone' | 'createdAt' | 'updatedAt'>;
+export type UserCreationAttributes = Optional<UserAttributes, 'id' | 'unionid' | 'phone' | 'avatar' | 'createdAt' | 'updatedAt'>;
 
 // 3. 定义模型类，继承自 Sequelize 的 Model
 export class UserModel extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -26,6 +27,7 @@ export class UserModel extends Model<UserAttributes, UserCreationAttributes> imp
   public openid!: string;
   public unionid!: string | null;
   public phone!: number | null;
+  public avatar!: string | null;;
   public gender!: number;
   public freeze!: number;
 
@@ -63,6 +65,10 @@ export async function createUserModule(sequelize: Sequelize) {
     },
     phone: {
       type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+    avatar: {
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
     gender: {

@@ -1,3 +1,7 @@
 export enum ErrorCode {
   MISS_OPENID = 400001,
+  // account
+  CREATE_USER_ERROR = 50100,
+  SECRET_NOT_FOUND = 50101,
+  CREATE_ACCESS_TOKEN_ERROR = 50102
 }

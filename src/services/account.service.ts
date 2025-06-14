@@ -1,11 +1,15 @@
 import koa from 'koa';
+import { generateUsernameFromId } from '../utils/generate-username-from-openid';
+import { UserModel } from '../db/user';
+import { JWTPayload } from '../interfaces/jwt';
+import { generateJWT } from '../utils/generate-jwt';
 
 class AccountService {
   /**
    * 检查当前openid是否存在用户绑定
    * @param ctx Koa.Context
    * @param openid string
-   * @returns boolean
+   * @returns UserModel
    */
   async checkUserExist(ctx: koa.Context, openid: string) {
     try {
@@ -18,7 +22,68 @@ class AccountService {
 
       return {
         error: null,
-        result: !!res,
+        result: res,
+      };
+    } catch (error: any) {
+      return {
+        error,
+        result: null,
+      };
+    }
+  }
+
+  /**
+   * 创建用户
+   * @param ctx Koa.Context
+   * @param openid string
+   * @param unionid string
+   * @returns UserModel
+   */
+  async registrationUser(ctx: koa.Context, openid: string, unionid: string) {
+    try {
+      const { db } = ctx.state;
+      const username = generateUsernameFromId(openid);
+      const res = await db.user.create({
+        openid,
+        unionid,
+        username,
+        nickname: username,
+        gender: 0,
+        freeze: 0,
+      });
+      return {
+        error: null,
+        result: res,
+      };
+    } catch (error: any) {
+      return {
+        error,
+        result: null,
+      };
+    }
+  }
+
+  /**
+   * 生产access token
+   * @param user UserModel
+   * @param token string
+   * @returns string
+   */
+  async createUserAccessToken(user: UserModel, token: string) {
+    try {
+      const { dataValues } = user;
+
+      const jwtPayload: JWTPayload = {
+        id: user.id,
+        username: dataValues.username,
+        openid: dataValues.openid,
+        unionid: dataValues.unionid || '',
+        createAt: dataValues.createdAt || '',
+        updateAt: dataValues.updatedAt || '',
+      };
+      return {
+        error: null,
+        result: generateJWT(jwtPayload, token),
       };
     } catch (error: any) {
       return {

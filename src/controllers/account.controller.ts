@@ -19,13 +19,40 @@ export function accountRouter(router: Router) {
       throw new HttpException(error.message, ErrorCode.MISS_OPENID);
     }
 
+    let userData;
+
     // 用户不存在，进行注册流程
     if (!result) {
+      const { error: createError, result: createResult } = await accountService.registrationUser(ctx, wxInfo.openid, wxInfo.unionid);
 
+      if (createError) {
+        throw new HttpException(createError.message, ErrorCode.CREATE_USER_ERROR);
+      }
+
+      if (!createResult) {
+        throw new HttpException('create user fail', ErrorCode.CREATE_USER_ERROR);
+      }
+
+      userData = createResult;
+    } else {
+      userData = result;
     }
 
-    // 进行登录生成token
+    if (!process.env.SECRET) {
+      throw new HttpException('SECRET not found!', ErrorCode.SECRET_NOT_FOUND);
+    }
+    const { error: createAsseccTokenError, result: accessToken } = await accountService.createUserAccessToken(userData, process.env.SECRET);
 
-    ctx.body = wxInfo;
+    if (createAsseccTokenError) {
+      throw new HttpException(createAsseccTokenError.message, ErrorCode.CREATE_ACCESS_TOKEN_ERROR);
+    }
+
+    if (!accessToken) {
+      throw new HttpException('create access token fail', ErrorCode.CREATE_ACCESS_TOKEN_ERROR);
+    }
+
+    ctx.body = {
+      token: accessToken,
+    };
   });
 }
