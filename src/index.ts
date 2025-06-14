@@ -26,10 +26,10 @@ async function bootstrap() {
   app
     .use(logger())
     .use(catchMiddleware)
+    .use(getWxCommonHeaderMiddleware)
     .use(jwtMiddleware())
     .use(bodyParser())
     .use(dbMiddleware(models))
-    .use(getWxCommonHeaderMiddleware)
     .use(router.routes())
     .use(router.allowedMethods());
 

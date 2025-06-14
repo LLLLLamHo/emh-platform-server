@@ -23,10 +23,15 @@ export function jwtMiddleware(): Koa.Middleware {
 
       // 验证jwt
       const token = authorization.replace(`${ACCESS_TOKEN_PREFIX} `, '');
-      const decoded = jwt.verify(token,  process.env.SECRET);
+      const decoded = jwt.verify(token,  process.env.SECRET) as JWTPayload;
       if (!decoded) {
         throw new HttpException('pass login again.', HTTP_UNAUTHORIZED, ErrorCode.NO_LOGIN);
       }
+
+      if (ctx.state.wxInfo.openid !== decoded.openid) {
+        throw new HttpException('The Openid of the users are inconsistent', HTTP_UNAUTHORIZED, ErrorCode.OPENID_INCONSISTENCY);
+      }
+
       ctx.state.user = decoded as JWTPayload;
     }
 

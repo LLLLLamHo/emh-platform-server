@@ -16,7 +16,7 @@ export function loginRouter(router: Router) {
       throw new HttpException('Missing openid', HTTP_BAD_REQUEST, ErrorCode.MISS_OPENID);
     }
 
-    const { error, result } = await accountService.checkUserExist(ctx, wxInfo.openid);
+    const { error, result } = await accountService.findUser(ctx, wxInfo.openid);
     if (error) {
       throw new HttpException(error.message, HTTP_ERROR, ErrorCode.MISS_OPENID);
     }
