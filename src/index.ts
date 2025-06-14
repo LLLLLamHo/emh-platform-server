@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import { catchMiddleware } from './middlewares/catch.middleware';
 import { getWxCommonHeaderMiddleware } from './middlewares/get-wx-common-header.middleware';
 import { dbMiddleware } from './middlewares/db.middleware';
+import { jwtMiddleware } from './middlewares/jwt.middleware';
 
 const envPaths = ['.env', '.env.local'];
 dotenv.config({ path: envPaths, override: true });
@@ -22,10 +23,10 @@ async function bootstrap() {
   }
 
   const router = registerRouter();
-
   app
     .use(logger())
     .use(catchMiddleware)
+    .use(jwtMiddleware())
     .use(bodyParser())
     .use(dbMiddleware(models))
     .use(getWxCommonHeaderMiddleware)

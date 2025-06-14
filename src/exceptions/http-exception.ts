@@ -1,8 +1,10 @@
+import { ErrorCode } from '../constants/code';
+
 export class HttpException extends Error {
   public status: number;
-  public code?: string;
+  public code?: ErrorCode;
 
-  constructor(message: string, status = 500, code?: string) {
+  constructor(message: string, status = 500, code?: ErrorCode) {
     super(message);
     this.status = status;
     this.code = code;
