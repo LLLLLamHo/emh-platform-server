@@ -1,6 +1,7 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
+import { TABLE_NAME as USER_TABEL_NAME } from './user';
 
-const TABLE_NAME = 'moods';
+export const TABLE_NAME = 'moods';
 
 export interface MoodAttributes {
   id: number;
@@ -16,6 +17,56 @@ export interface MoodAttributes {
 export type MoodCreationAttributes = Optional<MoodAttributes, 'id' | 'content' | 'createdAt' | 'updatedAt'>;
 
 export class MoodModel extends Model<MoodAttributes, MoodCreationAttributes> implements MoodAttributes {
+  static async initModel(sequelize: Sequelize): Promise<typeof MoodModel> {
+    MoodModel.init({
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: USER_TABEL_NAME,
+          key: 'id',
+        },
+      },
+      dateStr: {
+        type: DataTypes.STRING(10),
+        allowNull: false,
+      },
+      timestamp: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+      },
+      mood: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+      },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+    }, {
+      sequelize,
+      tableName: TABLE_NAME,
+      timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ['userId', 'timestamp'],
+        },
+      ],
+    });
+
+    await MoodModel.sync();
+    await sequelize.query(`ALTER TABLE ${TABLE_NAME} AUTO_INCREMENT = 10000;`);
+    console.log(`${TABLE_NAME} table sync seccess!`);
+
+    return MoodModel;
+  }
+
   public id!: number;
   public userId!: number;
   public dateStr!: string;
@@ -25,42 +76,4 @@ export class MoodModel extends Model<MoodAttributes, MoodCreationAttributes> imp
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
-}
-
-export async function createMoodModule(sequelize: Sequelize) {
-  const mood = sequelize.define<MoodModel, MoodCreationAttributes>('Mood', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      unique: true,
-    },
-    dateStr: {
-      type: DataTypes.STRING(10),
-      allowNull: false,
-    },
-    timestamp: {
-      type: DataTypes.BIGINT,
-      allowNull: false,
-    },
-    mood: {
-      type: DataTypes.STRING(20),
-      allowNull: false,
-    },
-    content: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-  }, {
-    tableName: TABLE_NAME,
-    timestamps: true,
-  });
-
-  // 强制同步表结构
-  await mood.sync();
-  return mood;
 }

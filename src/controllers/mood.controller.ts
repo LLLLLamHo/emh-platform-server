@@ -19,7 +19,7 @@ export function moodRouter(router: Router) {
   // 获取用户心情记录 可以搜索年、月、日不同区间
   router.get(`/${ROUTER_PREFIX}/list`, async (ctx: Koa.Context) => {
     const { year, month, day } = ctx.query;
-    
+
     if (!year) {
       throw new HttpException('Missing year parameter', ErrorCode.MISS_PARAM);
     }
@@ -73,6 +73,7 @@ export function moodRouter(router: Router) {
     });
 
     if (error) {
+      console.log(error);
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
     }
 

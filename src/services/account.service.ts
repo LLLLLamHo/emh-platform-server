@@ -31,7 +31,7 @@ class AccountService {
       }
 
       const { db } = ctx.state;
-      const res = await db.user.update(updateData, {
+      const res = await db.userModule.update(updateData, {
         where: {
           openid,
         },
@@ -61,7 +61,7 @@ class AccountService {
   async findUser(ctx: Koa.Context, openid: string) {
     try {
       const { db } = ctx.state;
-      const res = await db.user.findOne({
+      const res = await db.userModule.findOne({
         where: {
           openid,
         },
@@ -90,7 +90,7 @@ class AccountService {
     try {
       const { db } = ctx.state;
       const username = generateUsernameFromId(openid);
-      const res = await db.user.create({
+      const res = await db.userModule.create({
         openid,
         unionid,
         username,

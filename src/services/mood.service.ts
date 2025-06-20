@@ -25,7 +25,7 @@ class MoodService {
       const { wxInfo } = ctx.state;
 
       // 获取用户ID
-      const user = await db.user.findOne({
+      const user = await db.userModule.findOne({
         where: { openid: wxInfo.openid },
       });
 
@@ -61,7 +61,7 @@ class MoodService {
       }
 
       // 获取该时间范围内的所有心情记录
-      const moods = await db.mood.findAll({
+      const moods = await db.moodModule.findAll({
         where: {
           userId: user.id,
           timestamp: {
@@ -107,7 +107,7 @@ class MoodService {
       const { wxInfo } = ctx.state;
 
       // 获取用户ID
-      const user = await db.user.findOne({
+      const user = await db.userModule.findOne({
         where: { openid: wxInfo.openid },
       });
 
@@ -123,7 +123,7 @@ class MoodService {
       const timestamp = new Date(dateStr).getTime();
 
       // 创建或更新心情记录
-      const [mood, created] = await db.mood.findOrCreate({
+      const [mood, created] = await db.moodModule.findOrCreate({
         where: {
           userId: user.id,
           dateStr,
