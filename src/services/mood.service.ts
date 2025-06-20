@@ -1,5 +1,6 @@
 import Koa from 'koa';
 import { Op } from 'sequelize';
+import dayjs from 'dayjs';
 // import { MoodModel } from '../db/mood';
 
 interface MoodData {
@@ -22,19 +23,7 @@ class MoodService {
   async getMoodList(ctx: Koa.Context, params: GetMoodListParams) {
     try {
       const { db } = ctx.state;
-      const { wxInfo } = ctx.state;
-
-      // 获取用户ID
-      const user = await db.userModule.findOne({
-        where: { openid: wxInfo.openid },
-      });
-
-      if (!user) {
-        return {
-          error: new Error('User not found'),
-          result: null,
-        };
-      }
+      const { user } = ctx.state;
 
       // 计算时间戳范围
       let startTimestamp: number;
