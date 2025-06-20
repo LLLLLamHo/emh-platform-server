@@ -93,19 +93,7 @@ class MoodService {
   async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string }) {
     try {
       const { db } = ctx.state;
-      const { wxInfo } = ctx.state;
-
-      // 获取用户ID
-      const user = await db.userModule.findOne({
-        where: { openid: wxInfo.openid },
-      });
-
-      if (!user) {
-        return {
-          error: new Error('User not found'),
-          result: null,
-        };
-      }
+      const { user } = ctx.state;
 
       // 构建日期字符串和时间戳
       const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
