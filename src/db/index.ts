@@ -1,9 +1,10 @@
 import { ModelCtor, Sequelize } from 'sequelize';
 import { createUserModule, UserModel } from './user';
-
+import { createMoodModule, MoodModel } from './mood';
 
 export type DB = {
-  user: ModelCtor<UserModel>
+  user: ModelCtor<UserModel>;
+  mood: ModelCtor<MoodModel>;
 };
 
 // 数据库初始化方法
@@ -22,10 +23,12 @@ export async function initDB(): Promise<DB | undefined> {
     await sequelize.authenticate();
     console.log('数据库连接成功');
     const userModule = await createUserModule(sequelize);
-    console.log('用户表同步成功');
+    const moodModule = await createMoodModule(sequelize);
+    console.log('用户表和心情表同步成功');
 
     return {
       user: userModule,
+      mood: moodModule,
     };
   } catch (error) {
     console.error('数据库连接或同步失败:', error);

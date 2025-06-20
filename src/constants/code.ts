@@ -10,6 +10,9 @@ export enum ErrorCode {
   USER_NOT_FOUND = 50104,
   UPDATE_USER_ERROR = 50201,
   UPDATE_USER_FAIL = 50202,
+  // todo
+  MISS_PARAM = 400002,
+  SERVER_ERROR = 500000,
 }
 
 export const HTTP_OK = 200;
