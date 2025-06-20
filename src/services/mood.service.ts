@@ -1,6 +1,7 @@
 import Koa from 'koa';
 import { Op } from 'sequelize';
 import dayjs from 'dayjs';
+import { getUTCTimeRange } from '../utils/get-time-range';
 // import { MoodModel } from '../db/mood';
 
 interface MoodData {
@@ -26,28 +27,8 @@ class MoodService {
       const { user } = ctx.state;
 
       // 计算时间戳范围
-      let startTimestamp: number;
-      let endTimestamp: number;
+      const { startTimestamp, endTimestamp } = getUTCTimeRange(params.year, params.month, params.day);
 
-      if (params.month && params.day) {
-        // 查询具体某一天
-        const dateStr = `${params.year}-${String(params.month).padStart(2, '0')}-${String(params.day).padStart(2, '0')}`;
-        startTimestamp = new Date(dateStr).getTime();
-        endTimestamp = startTimestamp + 24 * 60 * 60 * 1000 - 1;
-      } else if (params.month) {
-        // 查询某个月
-        const dateStr = `${params.year}-${String(params.month).padStart(2, '0')}-01`;
-        startTimestamp = new Date(dateStr).getTime();
-        const lastDay = new Date(params.year, params.month, 0).getDate();
-        const endDateStr = `${params.year}-${String(params.month).padStart(2, '0')}-${lastDay}`;
-        endTimestamp = new Date(endDateStr).getTime() + 24 * 60 * 60 * 1000 - 1;
-      } else {
-        // 查询某年
-        const dateStr = `${params.year}-01-01`;
-        startTimestamp = new Date(dateStr).getTime();
-        const endDateStr = `${params.year}-12-31`;
-        endTimestamp = new Date(endDateStr).getTime() + 24 * 60 * 60 * 1000 - 1;
-      }
 
       // 获取该时间范围内的所有心情记录
       const moods = await db.moodModule.findAll({
@@ -63,7 +44,7 @@ class MoodService {
       // 按月份和日期组织数据
       const moodListByYear: Record<number, Record<number, MoodData>> = {};
       moods.forEach((mood: any) => {
-        const [_, month, day] = mood.dateStr.split('-').map(Number);
+        const [, month, day] = mood.dateStr.split('-').map(Number);
         if (!moodListByYear[month]) {
           moodListByYear[month] = {};
         }
@@ -96,8 +77,8 @@ class MoodService {
       const { user } = ctx.state;
 
       // 构建日期字符串和时间戳
-      const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
-      const timestamp = new Date(dateStr).getTime();
+      const dateStr = dayjs.utc(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`).format('YYYY-MM-DD');
+      const timestamp = dayjs.utc(dateStr).valueOf();
 
       // 创建或更新心情记录
       const [mood, created] = await db.moodModule.findOrCreate({
