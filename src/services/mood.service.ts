@@ -15,6 +15,21 @@ interface GetMoodListParams {
   day?: number;
 }
 
+interface MoodUpdateParams {
+  year: number;
+  month: number;
+  day: number;
+  mood?: string;
+  content?: string;
+  imgs?: string;
+}
+
+interface MoodDeleteParams {
+  year: number;
+  month: number;
+  day: number;
+}
+
 class MoodService {
   /**
    * 获取用户心情记录
@@ -101,7 +116,7 @@ class MoodService {
   /**
    * 保存用户心情记录
    */
-  async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string }) {
+  async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string, imgs?: string }) {
     try {
       const { db } = ctx.state;
       const { wxInfo } = ctx.state;
@@ -154,6 +169,54 @@ class MoodService {
         error,
         result: null,
       };
+    }
+  }
+
+  /**
+   * 更新用户心情记录
+   */
+  async updateMood(ctx: Koa.Context, data: MoodUpdateParams) {
+    try {
+      const { db } = ctx.state;
+      const { wxInfo } = ctx.state;
+      const user = await db.user.findOne({ where: { openid: wxInfo.openid } });
+      if (!user) {
+        return { error: new Error('User not found'), result: null };
+      }
+      const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
+      const timestamp = new Date(dateStr).getTime();
+      const mood = await db.mood.findOne({ where: { userId: user.id, dateStr } });
+      if (!mood) {
+        return { error: new Error('Mood record not found'), result: null };
+      }
+      await mood.update({
+        mood: data.mood,
+        content: data.content,
+        imgs: data.imgs,
+        timestamp,
+      } as any);
+      return { error: null, result: mood };
+    } catch (error: any) {
+      return { error, result: null };
+    }
+  }
+
+  /**
+   * 删除用户心情记录
+   */
+  async deleteMood(ctx: Koa.Context, data: MoodDeleteParams) {
+    try {
+      const { db } = ctx.state;
+      const { wxInfo } = ctx.state;
+      const user = await db.user.findOne({ where: { openid: wxInfo.openid } });
+      if (!user) {
+        return { error: new Error('User not found'), result: null };
+      }
+      const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
+      const result = await db.mood.destroy({ where: { userId: user.id, dateStr } });
+      return { error: null, result };
+    } catch (error: any) {
+      return { error, result: null };
     }
   }
 }

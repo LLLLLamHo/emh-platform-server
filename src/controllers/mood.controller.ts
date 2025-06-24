@@ -13,13 +13,14 @@ interface MoodSaveRequest {
   day: number;
   mood: string;
   content?: string;
+  imgs?: string;
 }
 
 export function moodRouter(router: Router) {
   // 获取用户心情记录 可以搜索年、月、日不同区间
   router.get(`/${ROUTER_PREFIX}/list`, async (ctx: Koa.Context) => {
     const { year, month, day } = ctx.query;
-    
+
     if (!year) {
       throw new HttpException('Missing year parameter', ErrorCode.MISS_PARAM);
     }
@@ -59,7 +60,7 @@ export function moodRouter(router: Router) {
   // 保存用户心情记录
   router.post(`/${ROUTER_PREFIX}/save`, async (ctx: Koa.Context) => {
     const body = ctx.request.body as MoodSaveRequest;
-    const { year, month, day, mood, content } = body;
+    const { year, month, day, mood, content, imgs } = body;
     if (!year || !month || !day || !mood) {
       throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
     }
@@ -70,12 +71,66 @@ export function moodRouter(router: Router) {
       day: Number(day),
       mood,
       content,
+      imgs,
     });
 
     if (error) {
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
     }
 
+    ctx.body = {
+      data: result,
+      status: 0,
+      message: 'success',
+    };
+  });
+
+  // 更新用户心情记录（POST）
+  router.post(`/${ROUTER_PREFIX}/update`, async (ctx: Koa.Context) => {
+    const body = ctx.request.body as Partial<MoodSaveRequest>;
+    const { year, month, day, mood, content, imgs } = body;
+    if (!year || !month || !day) {
+      throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
+    }
+    const { error, result } = await moodService.updateMood(ctx, {
+      year: Number(year),
+      month: Number(month),
+      day: Number(day),
+      mood,
+      content,
+      imgs,
+    });
+    if (error) {
+      throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
+    }
+    ctx.body = {
+      data: result,
+      status: 0,
+      message: 'success',
+    };
+  });
+
+  // 删除用户心情记录（POST）
+  router.post(`/${ROUTER_PREFIX}/delete`, async (ctx: Koa.Context) => {
+    const body = ctx.request.body as Partial<MoodSaveRequest>;
+    const { year, month, day } = body;
+    if (!year || !month || !day) {
+      throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
+    }
+    const yearNum = Number(year);
+    const monthNum = Number(month);
+    const dayNum = Number(day);
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
+      throw new HttpException('Invalid date parameter', ErrorCode.MISS_PARAM);
+    }
+    const { error, result } = await moodService.deleteMood(ctx, {
+      year: yearNum,
+      month: monthNum,
+      day: dayNum,
+    });
+    if (error) {
+      throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
+    }
     ctx.body = {
       data: result,
       status: 0,
