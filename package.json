@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "body-parser": "^1.19.1",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.2",
     "koa": "^2.13.4",

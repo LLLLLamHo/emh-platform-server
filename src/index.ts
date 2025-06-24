@@ -1,3 +1,4 @@
+import './utils/init-dayjs';
 import Koa from 'koa';
 import logger from 'koa-logger';
 import bodyParser from 'koa-bodyparser';
