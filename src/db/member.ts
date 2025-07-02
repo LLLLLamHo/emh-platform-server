@@ -4,10 +4,8 @@ const TABLE_NAME = 'members';
 
 export interface MemberAttributes {
   id: number;
-  user_id: number;
-  membership_start_time: Date;
-  membership_end_time: Date;
-  membership_renew_time: Date;
+  userId: number;
+  expirationTime: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -22,24 +20,17 @@ export class MemberModel extends Model<MemberAttributes, MemberCreationAttribute
         primaryKey: true,
         autoIncrement: true,
       },
-      user_id: {
+      userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        unique: true, // 唯一值，一个用户只能有一个会员记录
         references: {
           model: 'users',
           key: 'id',
         },
         onDelete: 'CASCADE',
       },
-      membership_start_time: {
-        type: DataTypes.DATE,
-        allowNull: false,
-      },
-      membership_end_time: {
-        type: DataTypes.DATE,
-        allowNull: false,
-      },
-      membership_renew_time: {
+      expirationTime: {
         type: DataTypes.DATE,
         allowNull: false,
       },
@@ -53,10 +44,8 @@ export class MemberModel extends Model<MemberAttributes, MemberCreationAttribute
     return MemberModel;
   }
   public id!: number;
-  public user_id!: number;
-  public membership_start_time!: Date;
-  public membership_end_time!: Date;
-  public membership_renew_time!: Date;
+  public userId!: number;
+  public expirationTime!: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }

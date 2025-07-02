@@ -4,3 +4,5 @@ Dockerfile*
 container.config.json
 LICENSE
 README.md
+
+.env.local
