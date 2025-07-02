@@ -3,4 +3,6 @@ export interface UpdateUserInfoDto {
   phone?: number
   avatar?: string
   gender?: string
+  currentSkin?: string // only
+  birthdayMonth?: number
 }

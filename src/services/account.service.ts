@@ -29,6 +29,12 @@ class AccountService {
       if (data.gender) {
         updateData.gender = data.gender;
       }
+      if (data.currentSkin) {
+        updateData.currentSkin = data.currentSkin;
+      }
+      if (data.birthdayMonth) {
+        updateData.birthdayMonth = data.birthdayMonth
+      }
 
       const { db } = ctx.state;
       const res = await db.userModule.update(updateData, {
@@ -140,6 +146,7 @@ class AccountService {
     }
   }
 }
+
 
 export const accountService = new AccountService();
 

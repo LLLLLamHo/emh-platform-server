@@ -73,7 +73,6 @@ export function moodRouter(router: Router) {
       content,
       imgs,
     });
-
     if (error) {
       console.log(error);
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);

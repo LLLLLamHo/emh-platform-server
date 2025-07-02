@@ -15,10 +15,13 @@ export interface UserAttributes {
   avatar?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
+  currentSkin?: string;
+  isMember?: boolean;
+  birthdayMonth?: number | null;
 }
 
 // 2. 定义创建时可选的字段
-export type UserCreationAttributes = Optional<UserAttributes, 'id' | 'unionid' | 'phone' | 'avatar' | 'createdAt' | 'updatedAt'>;
+export type UserCreationAttributes = Optional<UserAttributes, 'id' | 'unionid' | 'phone' | 'currentSkin' | 'avatar' | 'createdAt' | 'updatedAt'>;
 
 // 3. 定义模型类
 export class UserModel extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
@@ -67,6 +70,21 @@ export class UserModel extends Model<UserAttributes, UserCreationAttributes> imp
         allowNull: false,
         defaultValue: 0,
       },
+      currentSkin: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: 'emoji1',
+      },
+      isMember: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      birthdayMonth: {
+        type: DataTypes.STRING(10),
+        allowNull: true,
+        defaultValue: null,
+      },
     }, {
       sequelize,
       tableName: TABLE_NAME,
@@ -89,6 +107,9 @@ export class UserModel extends Model<UserAttributes, UserCreationAttributes> imp
   public avatar!: string | null;
   public gender!: number;
   public freeze!: number;
+  public currentSkin!: string;
+  public isMember!: boolean;
+  public birthdayMonth!: number | null;
 
   // timestamps
   public readonly createdAt!: Date;

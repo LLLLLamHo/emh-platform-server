@@ -86,7 +86,7 @@ class MoodService {
   /**
    * 保存用户心情记录
    */
-  async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string, imgs?: string }) {
+  async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string; imgs?: string }) {
     try {
       const { db } = ctx.state;
       const { user } = ctx.state;
@@ -117,6 +117,26 @@ class MoodService {
           timestamp,
         });
       }
+      // 处理图片存储
+      if (data.imgs) {
+        let imgArr: string[] = [];
+        // try {
+        //   if (data.imgs.trim().startsWith('[')) {
+        //     imgArr = JSON.parse(data.imgs);
+        //   } else {
+        imgArr = data.imgs.split(',').map(s => s.trim())
+          .filter(Boolean);
+        // }
+        // } catch (e) {
+        // imgArr = data.imgs.split(',').map(s => s.trim()).filter(Boolean);
+        // }
+        // 先删除该mood下所有图片（保证幂等）
+        await db.moodImageModule.destroy({ where: { moodId: mood.id } });
+        // 批量插入
+        if (imgArr.length > 0) {
+          await Promise.all(imgArr.map(url => db.moodImageModule.create({ moodId: mood.id, userId: user.id, timestamp, imageUrl: url })));
+        }
+      }
 
       return {
         error: null,
@@ -137,13 +157,14 @@ class MoodService {
     try {
       const { db } = ctx.state;
       const { wxInfo } = ctx.state;
-      const user = await db.user.findOne({ where: { openid: wxInfo.openid } });
+      const user = await db.userModule.findOne({ where: { openid: wxInfo.openid } });
       if (!user) {
         return { error: new Error('User not found'), result: null };
       }
-      const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
-      const timestamp = new Date(dateStr).getTime();
-      const mood = await db.mood.findOne({ where: { userId: user.id, dateStr } });
+      const dateStr = dayjs.utc(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`).format('YYYY-MM-DD');
+      const timestamp = dayjs.utc(dateStr).valueOf();
+
+      const mood = await db.moodModule.findOne({ where: { userId: user.id, dateStr } });
       if (!mood) {
         return { error: new Error('Mood record not found'), result: null };
       }
@@ -166,12 +187,13 @@ class MoodService {
     try {
       const { db } = ctx.state;
       const { wxInfo } = ctx.state;
-      const user = await db.user.findOne({ where: { openid: wxInfo.openid } });
+      const user = await db.userModule.findOne({ where: { openid: wxInfo.openid } });
       if (!user) {
         return { error: new Error('User not found'), result: null };
       }
-      const dateStr = `${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
-      const result = await db.mood.destroy({ where: { userId: user.id, dateStr } });
+      const dateStr = dayjs.utc(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`).format('YYYY-MM-DD');
+
+      const result = await db.moodModule.destroy({ where: { userId: user.id, dateStr } });
       return { error: null, result };
     } catch (error: any) {
       return { error, result: null };
