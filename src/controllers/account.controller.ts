@@ -53,6 +53,7 @@ export function accountRouter(router: Router) {
       updateAt: userData.updatedAt,
       isMember, // @anitatodo 返回信息不对
       currentSkin: userData.currentSkin || 'emoji1',
+      birthdayMonth: userData.birthdayMonth,
     };
   });
 

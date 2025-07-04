@@ -15,14 +15,6 @@ export interface MoodImageAttributes {
 export type MoodImageCreationAttributes = Optional<MoodImageAttributes, 'id' | 'createdAt' | 'updatedAt'>;
 
 export class MoodImageModel extends Model<MoodImageAttributes, MoodImageCreationAttributes> implements MoodImageAttributes {
-  public id!: number;
-  public moodId!: number;
-  public userId!: number;
-  public timestamp!: number;
-  public imageUrl!: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
-
   static async initModel(sequelize: Sequelize): Promise<typeof MoodImageModel> {
     MoodImageModel.init({
       id: {
@@ -73,4 +65,12 @@ export class MoodImageModel extends Model<MoodImageAttributes, MoodImageCreation
 
     return MoodImageModel;
   }
+
+  public id!: number;
+  public moodId!: number;
+  public userId!: number;
+  public timestamp!: number;
+  public imageUrl!: string;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }

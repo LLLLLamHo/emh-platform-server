@@ -26,7 +26,7 @@ export function skinRouter(router: Router) {
     if (error) {
       ctx.body = { status: 1, message: error.message };
     } else {
-      ctx.body = { status: 0, data: result, message: 'success' };
+      ctx.body = result;
     }
   });
 }

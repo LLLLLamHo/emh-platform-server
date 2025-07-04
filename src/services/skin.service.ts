@@ -24,10 +24,10 @@ class SkinService {
         return { error: new Error('Invalid skin'), result: null };
       }
       // 幂等：先查已拥有的皮肤
-      const owned = await db.skinModule.findAll({ where: { user_id: userId } });
+      const owned = await db.skinModule.findAll({ where: { userId } });
       const ownedSet = new Set(owned.map((s: SkinModel) => s.skin));
       const toCreate = skinsToBuy.filter(s => !ownedSet.has(s));
-      const created = await Promise.all(toCreate.map(s => db.skinModule.create({ user_id: userId, skin })));
+      const created = await Promise.all(toCreate.map(s => db.skinModule.create({ userId, skin })));
       return { error: null, result: created };
     } catch (error: any) {
       return { error, result: null };
@@ -43,7 +43,14 @@ class SkinService {
       if (!userId) {
         return { error: new Error('Missing userId'), result: null };
       }
-      const skins = await db.skinModule.findAll({ where: { user_id: userId } });
+      // 新增会员判断逻辑
+      const memberRecord = await db.memberModule.findOne({ where: { userId } });
+      if (memberRecord && memberRecord.expirationTime && new Date() < new Date(memberRecord.expirationTime)) {
+        // 是会员且在有效期内，返回所有表情
+        return { error: null, result: ['all'] };
+      }
+      // 非会员或会员过期，返回实际拥有的皮肤
+      const skins = await db.skinModule.findAll({ where: { userId } });
       return { error: null, result: skins.map((s: SkinModel) => s.skin) };
     } catch (error: any) {
       return { error, result: null };

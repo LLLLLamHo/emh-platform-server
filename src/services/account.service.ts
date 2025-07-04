@@ -33,7 +33,7 @@ class AccountService {
         updateData.currentSkin = data.currentSkin;
       }
       if (data.birthdayMonth) {
-        updateData.birthdayMonth = data.birthdayMonth
+        updateData.birthdayMonth = data.birthdayMonth;
       }
 
       const { db } = ctx.state;
@@ -146,7 +146,6 @@ class AccountService {
     }
   }
 }
-
 
 export const accountService = new AccountService();
 

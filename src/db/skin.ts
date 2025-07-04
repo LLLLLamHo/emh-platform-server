@@ -4,7 +4,7 @@ const TABLE_NAME = 'skins';
 
 export interface SkinAttributes {
   id: number;
-  user_id: number;
+  userId: number;
   skin: 'emoji1' | 'emoji2' | 'emoji3' | 'emoji4' | 'emoji5' | 'emoji6';
   createdAt?: Date;
   updatedAt?: Date;
@@ -13,6 +13,9 @@ export interface SkinAttributes {
 export type SkinCreationAttributes = Optional<SkinAttributes, 'id' | 'createdAt' | 'updatedAt'>;
 
 export class SkinModel extends Model<SkinAttributes, SkinCreationAttributes> implements SkinAttributes {
+ 
+  public readonly updatedAt!: Date;
+
   static async initModel(sequelize: Sequelize): Promise<typeof SkinModel> {
     SkinModel.init({
       id: {
@@ -20,7 +23,7 @@ export class SkinModel extends Model<SkinAttributes, SkinCreationAttributes> imp
         primaryKey: true,
         autoIncrement: true,
       },
-      user_id: {
+      userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -41,7 +44,7 @@ export class SkinModel extends Model<SkinAttributes, SkinCreationAttributes> imp
         {
           name: 'user_skin_composite_index',
           unique: false,
-          fields: ['user_id', 'skin'],
+          fields: ['userId', 'skin'],
         },
       ],
     });
@@ -51,8 +54,7 @@ export class SkinModel extends Model<SkinAttributes, SkinCreationAttributes> imp
   }
   
   public id!: number;
-  public user_id!: number;
+  public userId!: number;
   public skin!: 'emoji1' | 'emoji2' | 'emoji3' | 'emoji4' | 'emoji5' | 'emoji6';
   public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
 }

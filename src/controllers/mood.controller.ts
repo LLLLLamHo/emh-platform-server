@@ -50,11 +50,7 @@ export function moodRouter(router: Router) {
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
     }
 
-    ctx.body = {
-      data: result,
-      status: 0,
-      message: 'success',
-    };
+    ctx.body = result;
   });
 
   // 保存用户心情记录
@@ -78,37 +74,29 @@ export function moodRouter(router: Router) {
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
     }
 
-    ctx.body = {
-      data: result,
-      status: 0,
-      message: 'success',
-    };
+    ctx.body = result;
   });
 
-  // 更新用户心情记录（POST）
-  router.post(`/${ROUTER_PREFIX}/update`, async (ctx: Koa.Context) => {
-    const body = ctx.request.body as Partial<MoodSaveRequest>;
-    const { year, month, day, mood, content, imgs } = body;
-    if (!year || !month || !day) {
-      throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
-    }
-    const { error, result } = await moodService.updateMood(ctx, {
-      year: Number(year),
-      month: Number(month),
-      day: Number(day),
-      mood,
-      content,
-      imgs,
-    });
-    if (error) {
-      throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
-    }
-    ctx.body = {
-      data: result,
-      status: 0,
-      message: 'success',
-    };
-  });
+  // // 更新用户心情记录（POST）
+  // router.post(`/${ROUTER_PREFIX}/update`, async (ctx: Koa.Context) => {
+  //   const body = ctx.request.body as Partial<MoodSaveRequest>;
+  //   const { year, month, day, mood, content, imgs } = body;
+  //   if (!year || !month || !day) {
+  //     throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
+  //   }
+  //   const { error, result } = await moodService.updateMood(ctx, {
+  //     year: Number(year),
+  //     month: Number(month),
+  //     day: Number(day),
+  //     mood,
+  //     content,
+  //     imgs,
+  //   });
+  //   if (error) {
+  //     throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
+  //   }
+  //   ctx.body = result;
+  // });
 
   // 删除用户心情记录（POST）
   router.post(`/${ROUTER_PREFIX}/delete`, async (ctx: Koa.Context) => {
@@ -131,10 +119,6 @@ export function moodRouter(router: Router) {
     if (error) {
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
     }
-    ctx.body = {
-      data: result,
-      status: 0,
-      message: 'success',
-    };
+    ctx.body = result;
   });
 }
