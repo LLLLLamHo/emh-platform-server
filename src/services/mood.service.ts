@@ -2,6 +2,9 @@ import Koa from 'koa';
 import { Op } from 'sequelize';
 import dayjs from 'dayjs';
 import { getUTCTimeRange } from '../utils/get-time-range';
+import { cosService } from './cos.service';
+import { HttpException } from '../exceptions/http-exception';
+import { ErrorCode, HTTP_ERROR } from '../constants/code';
 // import { MoodModel } from '../db/mood';
 
 interface MoodData {
@@ -87,62 +90,66 @@ class MoodService {
    * 保存用户心情记录
    */
   async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string; imgs?: string }) {
+    const { db } = ctx.state;
+    const t = await db.sequelize.transaction();
+
     try {
-      const { db } = ctx.state;
       const { user } = ctx.state;
+
+      let moodImages: string[] = [];
+      // 处理图片转存
+      if (data.imgs) {
+        let imgArr: string[] = [];
+        imgArr = data.imgs.split(',');
+
+        const { result, error } = await cosService.moveObject(ctx, imgArr);
+        if (error as unknown as Error) {
+          throw new HttpException(error?.message || 'UNKNOW ERROR', HTTP_ERROR, ErrorCode.MOOD_TRANSFER_SAVE_FAIL);
+        }
+        moodImages = result;
+      }
+
 
       // 构建日期字符串和时间戳
       const dateStr = dayjs.utc(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`).format('YYYY-MM-DD');
       const timestamp = dayjs.utc(dateStr).valueOf();
 
+      // 开启事务
       // 创建或更新心情记录
-      const [mood, created] = await db.moodModule.findOrCreate({
-        where: {
-          userId: user.id,
-          dateStr,
-        },
-        defaults: {
-          userId: user.id,
-          dateStr,
-          timestamp,
-          mood: data.mood,
-          content: data.content,
-        },
+      const createRes = await db.moodModule.create({
+        userId: user.id,
+        dateStr,
+        timestamp,
+        mood: data.mood,
+        content: data.content,
+      }, {
+        transaction: t,
       });
 
-      if (!created) {
-        await mood.update({
-          mood: data.mood,
-          content: data.content,
-          timestamp,
-        });
+      if (!createRes) {
+        throw new HttpException('create mood record fail', HTTP_ERROR, ErrorCode.MOOD_CREATE_RECORED_FAIL);
       }
-      // 处理图片存储
-      if (data.imgs) {
-        let imgArr: string[] = [];
-        // try {
-        //   if (data.imgs.trim().startsWith('[')) {
-        //     imgArr = JSON.parse(data.imgs);
-        //   } else {
-        imgArr = data.imgs.split(',').map(s => s.trim())
-          .filter(Boolean);
-        // }
-        // } catch (e) {
-        // imgArr = data.imgs.split(',').map(s => s.trim()).filter(Boolean);
-        // }
-        // 先删除该mood下所有图片（保证幂等）
-        await db.moodImageModule.destroy({ where: { moodId: mood.id } });
-        // 批量插入
-        if (imgArr.length > 0) {
-          await Promise.all(imgArr.map(url => db.moodImageModule.create({ moodId: mood.id, userId: user.id, timestamp, imageUrl: url })));
+
+      if (moodImages && moodImages.length > 0) {
+        const insetData = moodImages.map(item => ({
+          userId: user.id,
+          moodId: createRes.id,
+          imageUrl: item,
+          timestamp,
+        }));
+        const createMoodImages = await db.moodImageModule.bulkCreate(insetData, { transaction: t });
+        if (!createMoodImages) {
+          throw new HttpException('create mood image record fail', HTTP_ERROR, ErrorCode.MOOD_CREATE_IMAGE_RECORED_FAIL);
         }
       }
 
+      await t.commit();
       return {
         error: null,
-        result: mood,
+        result: createRes.dataValues,
       };
     } catch (error: any) {
+      await t.rollback();
       return {
         error,
         result: null,

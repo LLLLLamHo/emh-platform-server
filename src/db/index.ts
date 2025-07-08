@@ -12,6 +12,7 @@ export type DB = {
   userModule: ModelCtor<UserModel>;
   moodModule: ModelCtor<MoodModel>;
   moodImageModule: ModelCtor<MoodImageModel>
+  sequelize: Sequelize
 };
 
 // 数据库初始化方法
@@ -49,6 +50,7 @@ export async function initDB(): Promise<DB | undefined> {
       moodImageModule,
       memberModule,
       skinModule,
+      sequelize,
     };
   } catch (error) {
     console.error('数据库连接或同步失败:', error);

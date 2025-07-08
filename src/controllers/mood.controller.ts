@@ -3,7 +3,7 @@ import Router from 'koa-router';
 // import { accountService } from '../services/account.service';
 import { moodService } from '../services/mood.service';
 import { HttpException } from '../exceptions/http-exception';
-import { ErrorCode } from '../constants/code';
+import { ErrorCode, HTTP_ERROR } from '../constants/code';
 
 const ROUTER_PREFIX = 'mood';
 
@@ -47,7 +47,7 @@ export function moodRouter(router: Router) {
     });
 
     if (error) {
-      throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
+      throw new HttpException(error.message, HTTP_ERROR, ErrorCode.MOOD_TRANSFER_SAVE_FAIL);
     }
 
     ctx.body = result;
@@ -69,9 +69,9 @@ export function moodRouter(router: Router) {
       content,
       imgs,
     });
+
     if (error) {
-      console.log(error);
-      throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
+      throw new HttpException(error.message, error.status, error.code);
     }
 
     ctx.body = result;

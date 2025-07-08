@@ -9,6 +9,8 @@ import { catchMiddleware } from './middlewares/catch.middleware';
 import { getWxCommonHeaderMiddleware } from './middlewares/get-wx-common-header.middleware';
 import { dbMiddleware } from './middlewares/db.middleware';
 import { jwtMiddleware } from './middlewares/jwt.middleware';
+import { initCOS } from './utils/init-cos';
+import { cosMiddleware } from './middlewares/cos.middleware';
 
 const envPaths = ['.env', '.env.local'];
 dotenv.config({ path: envPaths, override: true });
@@ -18,6 +20,7 @@ async function bootstrap() {
   const app = new Koa();
 
   const models = await initDB();
+  const cos = await initCOS();
 
   if (!models) {
     throw Error('init db fail!');
@@ -30,6 +33,7 @@ async function bootstrap() {
     .use(getWxCommonHeaderMiddleware)
     .use(jwtMiddleware())
     .use(bodyParser())
+    .use(cosMiddleware(cos))
     .use(dbMiddleware(models))
     .use(router.routes())
     .use(router.allowedMethods());

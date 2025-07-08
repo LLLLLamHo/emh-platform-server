@@ -2,6 +2,7 @@ import 'koa';
 
 import type { DB } from '../src/db';
 import { JWTPayload } from '../src/interfaces/jwt';
+import COS from 'cos-nodejs-sdk-v5';
 
 type WxInfo = {
   cloudbaseAccessToken: string;
@@ -16,6 +17,7 @@ declare module 'koa' {
     db: DB;  // 或者你具体的类型
     wxInfo: WxInfo
     user: JWTPayload
+    cos: COS
   }
 }
 

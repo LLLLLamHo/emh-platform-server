@@ -53,8 +53,7 @@ export class MoodImageModel extends Model<MoodImageAttributes, MoodImageCreation
       timestamps: true,
       indexes: [
         {
-          unique: true,
-          fields: ['moodId', 'timestamp'],
+          fields: ['userId', 'moodId', 'timestamp'],
         },
       ],
     });
