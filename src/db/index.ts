@@ -39,10 +39,7 @@ export async function initDB(): Promise<DB | undefined> {
 
     // 关联用户表和心情表
     UserModel.hasMany(MoodModel, { foreignKey: 'userId', sourceKey: 'id', as: 'moods' });
-    MoodModel.belongsTo(UserModel, { foreignKey: 'userId', targetKey: 'id', as: 'user' });
-    MoodImageModel.belongsTo(MoodModel, { foreignKey: 'moodId', targetKey: 'id', as: 'user' });
-    MemberModel.belongsTo(UserModel, { foreignKey: 'userId', targetKey: 'id', as: 'user' });
-    SkinModel.belongsTo(UserModel, { foreignKey: 'userId', targetKey: 'id', as: 'user' });
+    MoodModel.hasMany(MoodImageModel, { foreignKey: 'moodId', sourceKey: 'id', as: 'moodImages' });
 
     return {
       userModule,

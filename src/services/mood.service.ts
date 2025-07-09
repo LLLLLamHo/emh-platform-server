@@ -5,6 +5,7 @@ import { getUTCTimeRange } from '../utils/get-time-range';
 import { cosService } from './cos.service';
 import { HttpException } from '../exceptions/http-exception';
 import { ErrorCode, HTTP_ERROR } from '../constants/code';
+import { MoodImageModel } from '../db/mood_images';
 // import { MoodModel } from '../db/mood';
 
 interface MoodData {
@@ -12,6 +13,7 @@ interface MoodData {
   content?: string;
   dateStr: string;
   timestamp: number;
+  images?: string[]
 }
 
 interface GetMoodListParams {
@@ -39,14 +41,13 @@ class MoodService {
   /**
    * 获取用户心情记录
    */
-  async getMoodList(ctx: Koa.Context, params: GetMoodListParams) {
+  async getMoodList(ctx: Koa.Context, params: GetMoodListParams, getImages = false) {
     try {
       const { db } = ctx.state;
       const { user } = ctx.state;
 
       // 计算时间戳范围
       const { startTimestamp, endTimestamp } = getUTCTimeRange(params.year, params.month, params.day);
-
 
       // 获取该时间范围内的所有心情记录
       const moods = await db.moodModule.findAll({
@@ -56,6 +57,11 @@ class MoodService {
             [Op.between]: [startTimestamp, endTimestamp],
           },
         },
+        include: getImages ? {
+          model: MoodImageModel,
+          attributes: ['imageUrl'],
+          as: 'moodImages',
+        } : {},
         order: [['timestamp', 'DESC']],
       });
 
@@ -71,6 +77,7 @@ class MoodService {
           content: mood.content,
           dateStr: mood.dateStr,
           timestamp: mood.timestamp,
+          images: mood?.moodImages || [],
         };
       });
 
