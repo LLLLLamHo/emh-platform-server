@@ -9,6 +9,7 @@ import { MoodImageModel } from '../db/mood_images';
 // import { MoodModel } from '../db/mood';
 
 interface MoodData {
+  id: string;
   mood: string;
   content?: string;
   dateStr: string;
@@ -38,6 +39,39 @@ interface MoodDeleteParams {
 }
 
 class MoodService {
+  /**
+   * 获取用户指定心情记录
+   */
+  async getMood(ctx: Koa.Context, id: string) {
+    try {
+      const { db } = ctx.state;
+      const { user } = ctx.state;
+
+      // 获取该时间范围内的所有心情记录
+      const moods = await db.moodModule.findOne({
+        where: {
+          userId: user.id,
+          id,
+        },
+        include: {
+          model: MoodImageModel,
+          attributes: ['imageUrl'],
+          as: 'moodImages',
+        },
+      });
+
+      return {
+        error: null,
+        result: moods,
+      };
+    } catch (error: any) {
+      return {
+        error,
+        result: null,
+      };
+    }
+  }
+
   /**
    * 获取用户心情记录
    */
@@ -73,6 +107,7 @@ class MoodService {
           moodListByYear[month] = {};
         }
         moodListByYear[month][day] = {
+          id: mood.id,
           mood: mood.mood,
           content: mood.content,
           dateStr: mood.dateStr,

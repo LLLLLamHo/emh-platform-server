@@ -17,6 +17,23 @@ interface MoodSaveRequest {
 }
 
 export function moodRouter(router: Router) {
+  // 获取指定心情记录
+  router.get(`/${ROUTER_PREFIX}`, async (ctx: Koa.Context) => {
+    const { id } = ctx.query;
+
+    if (!id) {
+      throw new HttpException('Missing mood id', ErrorCode.MISS_PARAM);
+    }
+
+    const { error, result } = await moodService.getMood(ctx, id as string);
+
+    if (error) {
+      throw new HttpException(error.message, HTTP_ERROR, ErrorCode.GET_MOOD_DETAIL_FAIL);
+    }
+
+    ctx.body = result;
+  });
+
   // 获取用户心情记录 可以搜索年、月、日不同区间
   router.get(`/${ROUTER_PREFIX}/list`, async (ctx: Koa.Context) => {
     const { year, month, day, image = '0' } = ctx.query;
