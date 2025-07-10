@@ -61,7 +61,7 @@ class MoodService {
           model: MoodImageModel,
           attributes: ['imageUrl'],
           as: 'moodImages',
-        } : {},
+        } : undefined,
         order: [['timestamp', 'DESC']],
       });
 
