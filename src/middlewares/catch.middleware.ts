@@ -1,12 +1,12 @@
 import Koa from 'koa';
 import { HttpException } from '../exceptions/http-exception';
-import { HTTP_ERROR, HTTP_OK } from '../constants/code';
+import { HTTP_ERROR } from '../constants/code';
 
 export async function catchMiddleware(ctx: Koa.Context, next: Koa.Next) {
   try {
     await next();
   } catch (err: any) {
-    ctx.status = HTTP_OK;
+    ctx.status = HTTP_ERROR;
 
     if (err instanceof HttpException) {
       ctx.body = {

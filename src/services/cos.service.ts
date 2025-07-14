@@ -2,6 +2,24 @@ import Koa from 'koa';
 
 
 class CosService {
+  async removeObject(ctx: Koa.Context, imgs: string[]) {
+    try {
+      const { cos } = ctx.state;
+      const cosConfig = this.generatedCosConfig();
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < imgs.length; i++) {
+        const originalKey = imgs[i].replace(`cloud://${process.env.ENV_ID}.${process.env.COS_BUCKET}/`, '');
+
+        await cos.deleteObject({
+          ...cosConfig,
+          Key: originalKey,
+        });
+      }
+    } catch (error: any) {
+      console.error(error);
+    }
+  }
+
   async moveObject(ctx: Koa.Context, imgs: string[]) {
     try {
       const {  cos, user } = ctx.state;

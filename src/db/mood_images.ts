@@ -10,6 +10,7 @@ export interface MoodImageAttributes {
   imageUrl: string;
   createdAt?: Date;
   updatedAt?: Date;
+  status: number;
 }
 
 export type MoodImageCreationAttributes = Optional<MoodImageAttributes, 'id' | 'createdAt' | 'updatedAt'>;
@@ -47,6 +48,10 @@ export class MoodImageModel extends Model<MoodImageAttributes, MoodImageCreation
         type: DataTypes.STRING(255),
         allowNull: false,
       },
+      status: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
     }, {
       sequelize,
       tableName: TABLE_NAME,
@@ -70,6 +75,7 @@ export class MoodImageModel extends Model<MoodImageAttributes, MoodImageCreation
   public userId!: number;
   public timestamp!: number;
   public imageUrl!: string;
+  public status!: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }

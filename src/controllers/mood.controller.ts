@@ -4,6 +4,7 @@ import Router from 'koa-router';
 import { moodService } from '../services/mood.service';
 import { HttpException } from '../exceptions/http-exception';
 import { ErrorCode, HTTP_ERROR } from '../constants/code';
+import { cosService } from '../services/cos.service';
 
 const ROUTER_PREFIX = 'mood';
 
@@ -78,7 +79,62 @@ export function moodRouter(router: Router) {
       throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
     }
 
-    const { error, result } = await moodService.saveMood(ctx, {
+    // 先查找是否存在相同的记录
+    const { result: existResult, error: existError } = await moodService.userMoodExist(ctx, Number(year), Number(month), Number(day));
+
+    if (existError) {
+      throw new HttpException(existError.message, existError.status, existError.code);
+    }
+
+    // 走更新逻辑
+    if (existResult) {
+      const { error, result } = await moodService.updateMood(ctx, `${existResult.id}`, {
+        year: Number(year),
+        month: Number(month),
+        day: Number(day),
+        mood,
+        content,
+        imgs,
+      });
+      if (error) {
+        throw new HttpException(error.message, error.status, error.code);
+      }
+      ctx.body = result;
+    } else {
+      const { error, result } = await moodService.saveMood(ctx, {
+        year: Number(year),
+        month: Number(month),
+        day: Number(day),
+        mood,
+        content,
+        imgs,
+      });
+
+      if (error) {
+        if (imgs) {
+          cosService.removeObject(ctx, imgs.split(','));
+        }
+        throw new HttpException(error.message, error.status, error.code);
+      }
+
+      ctx.body = result;
+    }
+  });
+
+  // 更新用户心情记录
+  router.put(`/${ROUTER_PREFIX}/update`, async (ctx: Koa.Context) => {
+    const body = ctx.request.body as Partial<MoodSaveRequest>;
+    const { id } = ctx.query;
+    const { year, month, day, mood, content, imgs } = body;
+    if (!year || !month || !day) {
+      throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
+    }
+
+    if (!id) {
+      throw new HttpException('Missing mood id', ErrorCode.MISS_PARAM);
+    }
+
+    const { error, result } = await moodService.updateMood(ctx, id as string, {
       year: Number(year),
       month: Number(month),
       day: Number(day),
@@ -86,53 +142,19 @@ export function moodRouter(router: Router) {
       content,
       imgs,
     });
-
     if (error) {
+      if (imgs) {
+        cosService.removeObject(ctx, imgs.split(','));
+      }
       throw new HttpException(error.message, error.status, error.code);
     }
-
     ctx.body = result;
   });
 
-  // // 更新用户心情记录（POST）
-  // router.post(`/${ROUTER_PREFIX}/update`, async (ctx: Koa.Context) => {
-  //   const body = ctx.request.body as Partial<MoodSaveRequest>;
-  //   const { year, month, day, mood, content, imgs } = body;
-  //   if (!year || !month || !day) {
-  //     throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
-  //   }
-  //   const { error, result } = await moodService.updateMood(ctx, {
-  //     year: Number(year),
-  //     month: Number(month),
-  //     day: Number(day),
-  //     mood,
-  //     content,
-  //     imgs,
-  //   });
-  //   if (error) {
-  //     throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
-  //   }
-  //   ctx.body = result;
-  // });
-
   // 删除用户心情记录（POST）
-  router.post(`/${ROUTER_PREFIX}/delete`, async (ctx: Koa.Context) => {
-    const body = ctx.request.body as Partial<MoodSaveRequest>;
-    const { year, month, day } = body;
-    if (!year || !month || !day) {
-      throw new HttpException('Missing required parameters', ErrorCode.MISS_PARAM);
-    }
-    const yearNum = Number(year);
-    const monthNum = Number(month);
-    const dayNum = Number(day);
-    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
-      throw new HttpException('Invalid date parameter', ErrorCode.MISS_PARAM);
-    }
-    const { error, result } = await moodService.deleteMood(ctx, {
-      year: yearNum,
-      month: monthNum,
-      day: dayNum,
-    });
+  router.delete(`/${ROUTER_PREFIX}/delete`, async (ctx: Koa.Context) => {
+    const { id } = ctx.query;
+    const { error, result } = await moodService.deleteMood(ctx, `${id}`);
     if (error) {
       throw new HttpException(error.message, ErrorCode.SERVER_ERROR);
     }

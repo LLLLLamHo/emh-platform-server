@@ -6,7 +6,6 @@ import { cosService } from './cos.service';
 import { HttpException } from '../exceptions/http-exception';
 import { ErrorCode, HTTP_ERROR } from '../constants/code';
 import { MoodImageModel } from '../db/mood_images';
-// import { MoodModel } from '../db/mood';
 
 interface MoodData {
   id: string;
@@ -32,13 +31,35 @@ interface MoodUpdateParams {
   imgs?: string;
 }
 
-interface MoodDeleteParams {
-  year: number;
-  month: number;
-  day: number;
-}
-
 class MoodService {
+  async userMoodExist(ctx: Koa.Context, year: number, month: number, day: number) {
+    try {
+      const { user, db } = ctx.state;
+      // 构建日期字符串和时间戳
+      const dateStr = dayjs.utc(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`).format('YYYY-MM-DD');
+      const timestamp = dayjs.utc(dateStr).valueOf();
+
+      const result = await db.moodModule.findOne({
+        where: {
+          userId: user.id,
+          timestamp,
+          dateStr,
+        },
+      });
+
+
+      return {
+        error: null,
+        result,
+      };
+    } catch (error: any) {
+      return {
+        error,
+        result: null,
+      };
+    }
+  }
+
   /**
    * 获取用户指定心情记录
    */
@@ -134,11 +155,11 @@ class MoodService {
   async saveMood(ctx: Koa.Context, data: { year: number; month: number; day: number; mood: string; content?: string; imgs?: string }) {
     const { db } = ctx.state;
     const t = await db.sequelize.transaction();
+    let moodImages: string[] = [];
 
     try {
       const { user } = ctx.state;
 
-      let moodImages: string[] = [];
       // 处理图片转存
       if (data.imgs) {
         let imgArr: string[] = [];
@@ -168,6 +189,7 @@ class MoodService {
         transaction: t,
       });
 
+
       if (!createRes) {
         throw new HttpException('create mood record fail', HTTP_ERROR, ErrorCode.MOOD_CREATE_RECORED_FAIL);
       }
@@ -177,6 +199,7 @@ class MoodService {
           userId: user.id,
           moodId: createRes.id,
           imageUrl: item,
+          status: 0,
           timestamp,
         }));
         const createMoodImages = await db.moodImageModule.bulkCreate(insetData, { transaction: t });
@@ -192,6 +215,7 @@ class MoodService {
       };
     } catch (error: any) {
       await t.rollback();
+      cosService.removeObject(ctx, moodImages);
       return {
         error,
         result: null,
@@ -202,29 +226,99 @@ class MoodService {
   /**
    * 更新用户心情记录
    */
-  async updateMood(ctx: Koa.Context, data: MoodUpdateParams) {
+  async updateMood(ctx: Koa.Context, id: string, data: MoodUpdateParams) {
+    const { db, user } = ctx.state;
+    const t = await db.sequelize.transaction();
+
+    let moveMoodImages: string[] = [];
+    let addMoodImages: string[] = [];
+    let deleteImages: MoodImageModel[] = [];
     try {
-      const { db } = ctx.state;
-      const { wxInfo } = ctx.state;
-      const user = await db.userModule.findOne({ where: { openid: wxInfo.openid } });
-      if (!user) {
-        return { error: new Error('User not found'), result: null };
-      }
+      // 构建日期字符串和时间戳
       const dateStr = dayjs.utc(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`).format('YYYY-MM-DD');
       const timestamp = dayjs.utc(dateStr).valueOf();
 
-      const mood = await db.moodModule.findOne({ where: { userId: user.id, dateStr } });
+      // 找出当前记录的图片信息
+      const mood = await db.moodModule.findOne({
+        where: {
+          id,
+        },
+        include: {
+          model: MoodImageModel,
+          attributes: ['imageUrl', 'id'],
+          as: 'moodImages',
+        },
+      });
+
       if (!mood) {
-        return { error: new Error('Mood record not found'), result: null };
+        throw new HttpException('mood record not found', HTTP_ERROR, ErrorCode.MOOD_RECORD_NOT_FOUND);
       }
-      await mood.update({
-        mood: data.mood,
+
+      // @ts-ignore
+      const { moodImages = [] } = mood;
+      const oldImages = moodImages.map((image: any) => image.imageUrl);
+      // 找出交集
+      const currImages = data.imgs ? data.imgs.split(',') : [];
+      deleteImages = moodImages.filter((moodImage: MoodImageModel) => !currImages.includes(moodImage.imageUrl));
+
+      moveMoodImages = currImages.filter((image: string) => !oldImages.includes(image));
+
+      const { result, error } = await cosService.moveObject(ctx, moveMoodImages);
+      if (error as unknown as Error) {
+        throw new HttpException(error?.message || 'UNKNOW ERROR', HTTP_ERROR, ErrorCode.MOOD_TRANSFER_SAVE_FAIL);
+      }
+      addMoodImages = result;
+
+      const updateRes = await db.moodModule.update({
         content: data.content,
-        imgs: data.imgs,
-        timestamp,
-      } as any);
-      return { error: null, result: mood };
+        mood: data.mood,
+      }, {
+        where: {
+          id,
+        },
+        transaction: t,
+      });
+
+      if (!updateRes) {
+        throw new HttpException('create mood record fail', HTTP_ERROR, ErrorCode.MOOD_UPDATE_RECORED_FAIL);
+      }
+
+
+      await db.moodImageModule.destroy({
+        where: {
+          id: {
+            [Op.in]: deleteImages.map(item => item.id),
+          },
+        },
+        transaction: t,
+      });
+
+      if (addMoodImages && addMoodImages.length > 0) {
+        const insetData = addMoodImages.map((item: string) => ({
+          userId: user.id,
+          moodId: +id,
+          imageUrl: item,
+          status: 0,
+          timestamp,
+        }));
+
+        const createMoodImages = await db.moodImageModule.bulkCreate(insetData, { transaction: t });
+        if (!createMoodImages) {
+          throw new HttpException('create mood image record fail', HTTP_ERROR, ErrorCode.MOOD_UPDATE_IMAGE_RECORED_FAIL);
+        }
+      }
+
+      await t.commit();
+
+      const updatedRecord = await db.moodModule.findOne({
+        where: { id },
+      });
+
+      cosService.removeObject(ctx, deleteImages.map(item => item.imageUrl));
+      return { error: null, result: updatedRecord };
     } catch (error: any) {
+      await t.rollback();
+      cosService.removeObject(ctx, [...addMoodImages, ...moveMoodImages]);
       return { error, result: null };
     }
   }
@@ -232,20 +326,33 @@ class MoodService {
   /**
    * 删除用户心情记录
    */
-  async deleteMood(ctx: Koa.Context, data: MoodDeleteParams) {
+  async deleteMood(ctx: Koa.Context, id: string) {
+    const { db } = ctx.state;
+    const t = await db.sequelize.transaction();
     try {
-      const { db } = ctx.state;
-      const { wxInfo } = ctx.state;
-      const user = await db.userModule.findOne({ where: { openid: wxInfo.openid } });
-      if (!user) {
-        return { error: new Error('User not found'), result: null };
-      }
-      const dateStr = dayjs.utc(`${data.year}-${String(data.month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`).format('YYYY-MM-DD');
+      const { db, user } = ctx.state;
 
-      const result = await db.moodModule.destroy({ where: { userId: user.id, dateStr } });
-      return { error: null, result };
+      const moodRecord = await db.moodModule.findOne({ where: { id }, include: {
+        model: MoodImageModel,
+        attributes: ['imageUrl', 'id'],
+        as: 'moodImages',
+      }, transaction: t });
+
+      if (!moodRecord) {
+        throw new HttpException('mood record not found', HTTP_ERROR, ErrorCode.MOOD_RECORD_NOT_FOUND);
+      }
+
+      await db.moodModule.destroy({ where: { id, userId: user.id }, transaction: t });
+      await db.moodImageModule.destroy({ where: { moodId: moodRecord.id, userId: user.id }, transaction: t });
+
+      // @ts-ignore
+      await cosService.removeObject(ctx, moodRecord.moodImages.map(item => item.imageUrl));
+
+      await t.commit();
+      return { error: null, result: true };
     } catch (error: any) {
-      return { error, result: null };
+      await t.rollback();
+      return { error, result: false };
     }
   }
 }
