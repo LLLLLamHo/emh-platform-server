@@ -26,7 +26,8 @@ export function skinRouter(router: Router) {
     if (error) {
       ctx.body = { status: 1, message: error.message };
     } else {
-      ctx.body = result;
+      //@ts-ignore
+      ctx.body = result.length > 0 ? result : ['emoji1'];
     }
   });
 }

@@ -2,9 +2,10 @@ import Koa from 'koa';
 import Router from 'koa-router';
 // import { accountService } from '../services/account.service';
 import { moodService } from '../services/mood.service';
+import { cosService } from '../services/cos.service';
 import { HttpException } from '../exceptions/http-exception';
 import { ErrorCode, HTTP_ERROR } from '../constants/code';
-import { cosService } from '../services/cos.service';
+
 
 const ROUTER_PREFIX = 'mood';
 

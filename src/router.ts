@@ -2,6 +2,7 @@ import Router from 'koa-router';
 import { accountRouter } from './controllers/account.controller';
 import { loginRouter } from './controllers/login.controller';
 import { moodRouter } from './controllers/mood.controller';
+import { analyseRouter } from './controllers/analyse.controller';
 import { skinRouter } from './controllers/skin.controller';
 
 
@@ -11,6 +12,7 @@ export function registerRouter() {
   loginRouter(router);
   accountRouter(router);
   moodRouter(router);
+  analyseRouter(router);
   skinRouter(router);
 
   return router;

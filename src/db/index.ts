@@ -4,6 +4,7 @@ import { MoodModel } from './mood';
 import { MoodImageModel } from './mood_images';
 import { MemberModel } from './member';
 import { SkinModel } from './skin';
+import { AnalyseModel } from './analyse';
 
 
 export type DB = {
@@ -11,7 +12,8 @@ export type DB = {
   memberModule: ModelCtor<MemberModel>;
   userModule: ModelCtor<UserModel>;
   moodModule: ModelCtor<MoodModel>;
-  moodImageModule: ModelCtor<MoodImageModel>
+  moodImageModule: ModelCtor<MoodImageModel>;
+  analyseModule: ModelCtor<AnalyseModel>;
   sequelize: Sequelize
 };
 
@@ -35,11 +37,13 @@ export async function initDB(): Promise<DB | undefined> {
     const moodImageModule = await MoodImageModel.initModel(sequelize);
     const memberModule = await MemberModel.initModel(sequelize);
     const skinModule = await SkinModel.initModel(sequelize);
+    const analyseModule = await AnalyseModel.initModel(sequelize);
 
 
     // 关联用户表和心情表
     UserModel.hasMany(MoodModel, { foreignKey: 'userId', sourceKey: 'id', as: 'moods' });
     MoodModel.hasMany(MoodImageModel, { foreignKey: 'moodId', sourceKey: 'id', as: 'moodImages' });
+    UserModel.hasMany(AnalyseModel, { foreignKey: 'userId', sourceKey: 'id', as: 'analyses' });
 
     return {
       userModule,
@@ -47,6 +51,7 @@ export async function initDB(): Promise<DB | undefined> {
       moodImageModule,
       memberModule,
       skinModule,
+      analyseModule,
       sequelize,
     };
   } catch (error) {
