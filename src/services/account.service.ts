@@ -96,6 +96,8 @@ class AccountService {
     try {
       const { db } = ctx.state;
       const username = generateUsernameFromId(openid);
+      
+      // 创建用户，设置默认皮肤为 emoji1
       const res = await db.userModule.create({
         openid,
         unionid,
@@ -103,7 +105,23 @@ class AccountService {
         nickname: username,
         gender: 0,
         freeze: 0,
+        currentSkin: 'emoji1', // 设置默认皮肤
       });
+
+      // 创建用户的皮肤数据
+      if (res && res.id) {
+        try {
+          await db.skinModule.create({
+            userId: res.id,
+            skin: 'emoji1', // 默认皮肤
+          });
+          console.log(`用户 ${res.id} 的默认皮肤数据创建成功`);
+        } catch (skinError: any) {
+          console.error('创建用户皮肤数据失败:', skinError);
+          // 皮肤创建失败不影响用户注册，只记录错误
+        }
+      }
+
       return {
         error: null,
         result: res,

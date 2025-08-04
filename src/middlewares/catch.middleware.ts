@@ -1,13 +1,12 @@
 import Koa from 'koa';
 import { HttpException } from '../exceptions/http-exception';
-import { HTTP_ERROR } from '../constants/code';
+import { HTTP_ERROR, HTTP_OK } from '../constants/code';
 
 export async function catchMiddleware(ctx: Koa.Context, next: Koa.Next) {
   try {
     await next();
   } catch (err: any) {
-    ctx.status = HTTP_ERROR;
-
+    ctx.status = HTTP_OK;
     if (err instanceof HttpException) {
       ctx.body = {
         data: null,
@@ -26,8 +25,7 @@ export async function catchMiddleware(ctx: Koa.Context, next: Koa.Next) {
       };
     }
 
-
     // 记录错误日志
-    console.error('捕获到错误:', err);
+    console.error('捕获到错误:', err, ctx);
   }
 }

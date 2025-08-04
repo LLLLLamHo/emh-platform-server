@@ -200,113 +200,16 @@ export function analyseRouter(router: Router) {
         }
       });
 
-      // 处理没有缓存的月份，调用 Coze 进行分析
-      const monthsToAnalyze: number[] = [];
+      // 统计没有缓存的月份
+      const monthsWithoutCacheList: number[] = [];
       for (let month = 1; month <= maxMonth; month++) {
         if (!monthMap[month].fromCache) {
-          monthsToAnalyze.push(month);
+          monthsWithoutCacheList.push(month);
         }
       }
 
-      // 如果有需要分析的月份，逐个处理
-      if (monthsToAnalyze.length > 0) {
-        console.log(`需要分析的月份: ${monthsToAnalyze.join(', ')}`);
-        
-        for (const month of monthsToAnalyze) {
-          try {
-            // 获取该月份的心情数据
-            const { error, result } = await moodService.getMoodList(ctx, {
-              year: yearNum,
-              month: month,
-            }, false);
-            
-            if (error) {
-              console.error(`${month}月获取心情数据失败:`, error);
-              continue;
-            }
-
-            // 处理数据格式转换
-            let processedData: any = result;
-            let hasContent = false;
-            
-            if (result && result[month]) {
-              const monthData = result[month] as Record<string, any>;
-              const formattedEntries: string[] = [];
-
-              // 遍历该月份的所有日期数据
-              Object.keys(monthData).forEach((day) => {
-                const dayData = monthData[day];
-                if (dayData && dayData.content) {
-                  formattedEntries.push(`${month}月${day}号的记录：${dayData.content}`);
-                  hasContent = true;
-                }
-              });
-
-              // 如果有内容记录，则使用格式化后的字符串
-              if (formattedEntries.length > 0) {
-                processedData = formattedEntries.join('。');
-              }
-            }
-
-            // 检查是否有心情记录内容
-            if (!hasContent) {
-              console.log(`${month}月没有心情记录，跳过 AI 分析`);
-              monthMap[month] = {
-                month,
-                year: yearNum,
-                content: '该月份没有心情记录，无法进行分析',
-                hasData: false,
-                fromCache: false,
-                message: '该月份没有心情记录，无法进行分析'
-              };
-              continue;
-            }
-
-            // 调用 Coze 进行 AI 分析
-            const stream = await cozeService.analyzeMoodStream(ctx, processedData, yearNum, month);
-            let allContent = '';
-            for await (const chunk of cozeService.processStreamResponse(stream)) {
-              allContent += chunk;
-            }
-            console.log(`${month}月分析完成:`, allContent.substring(0, 100) + '...');
-
-            // 保存分析结果到数据库
-            if (allContent && allContent.trim()) {
-              const { error: saveError, result: saveResult } = await analyseService.saveAnalyse(ctx, {
-                year: yearNum,
-                month: month,
-                analysisContent: allContent,
-              });
-              
-              if (saveError) {
-                console.error(`${month}月保存分析结果失败:`, saveError);
-              } else {
-                console.log(`${month}月分析结果已保存:`, saveResult);
-              }
-
-              // 更新月份映射
-              monthMap[month] = {
-                month,
-                year: yearNum,
-                content: allContent,
-                hasData: true,
-                fromCache: false,
-                saved: true
-              };
-            }
-
-          } catch (error) {
-            console.error(`${month}月分析失败:`, error);
-            monthMap[month] = {
-              month,
-              year: yearNum,
-              content: '',
-              hasData: false,
-              fromCache: false,
-              message: `分析失败: ${error}`
-            };
-          }
-        }
+      if (monthsWithoutCacheList.length > 0) {
+        console.log(`没有分析结果的月份: ${monthsWithoutCacheList.join(', ')}`);
       }
 
       // 转换为数组格式
@@ -315,7 +218,7 @@ export function analyseRouter(router: Router) {
       // 统计信息
       const monthsWithData = result.filter((item: any) => item.hasData).length;
       const monthsFromCache = result.filter((item: any) => item.fromCache).length;
-      const monthsAnalyzed = result.filter((item: any) => !item.fromCache && item.hasData).length;
+      const monthsWithoutCache = result.filter((item: any) => !item.fromCache).length;
 
       ctx.body = {
         year: yearNum,
@@ -327,7 +230,7 @@ export function analyseRouter(router: Router) {
           monthsWithData,
           monthsWithoutData: maxMonth - monthsWithData,
           monthsFromCache,
-          monthsAnalyzed
+          monthsWithoutCache
         }
       };
 

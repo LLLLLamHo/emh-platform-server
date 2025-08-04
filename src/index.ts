@@ -11,6 +11,7 @@ import { dbMiddleware } from './middlewares/db.middleware';
 import { jwtMiddleware } from './middlewares/jwt.middleware';
 import { initCOS } from './utils/init-cos';
 import { cosMiddleware } from './middlewares/cos.middleware';
+import { startScheduler } from './utils/scheduler';
 
 const envPaths = ['.env', '.env.local'];
 dotenv.config({ path: envPaths, override: true });
@@ -37,6 +38,9 @@ async function bootstrap() {
     .use(dbMiddleware(models))
     .use(router.routes())
     .use(router.allowedMethods());
+
+  // 启动定时任务
+  startScheduler(models);
 
   app.listen(port, () => {
     console.log('启动成功', port);
