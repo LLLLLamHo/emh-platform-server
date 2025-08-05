@@ -12,6 +12,7 @@ export function analyseRouter(router: Router) {
   // 获取指定月份的心情分析结果
   router.get(`/${ROUTER_PREFIX}/month`, async (ctx: Koa.Context) => {
     const { year, month } = ctx.query;
+    const { state } = ctx;
 
     if (!year || !month) {
       throw new HttpException('Missing year or month parameter', ErrorCode.MISS_PARAM);
@@ -40,7 +41,7 @@ export function analyseRouter(router: Router) {
       }
 
       // 如果已有分析结果，直接返回
-      if (existingAnalyse && existingAnalyse.analysisContent) {
+      if (existingAnalyse?.analysisContent) {
         ctx.body = {
           content: existingAnalyse.analysisContent,
           fromCache: true,
@@ -51,11 +52,11 @@ export function analyseRouter(router: Router) {
       }
 
       // 第二步：如果没有缓存，则获取心情数据进行分析
-      const { error, result } = await moodService.getMoodList(ctx, {
+      const { error, result } = await moodService.getMoodList(ctx, state.user.id, {
         year: yearNum,
         month: monthNum,
       }, false);
-      
+
       if (error) {
         throw new HttpException(error.message, HTTP_ERROR, ErrorCode.MOOD_TRANSFER_SAVE_FAIL);
       }
@@ -63,15 +64,15 @@ export function analyseRouter(router: Router) {
       // 处理数据格式转换
       let processedData: any = result;
       let hasContent = false;
-      
-      if (result && result[monthNum]) {
+
+      if (result?.[monthNum]) {
         const monthData = result[monthNum] as Record<string, any>;
         const formattedEntries: string[] = [];
 
         // 遍历该月份的所有日期数据
         Object.keys(monthData).forEach((day) => {
           const dayData = monthData[day];
-          if (dayData && dayData.content) {
+          if (dayData?.content) {
             formattedEntries.push(`${monthNum}月${day}号的记录：${dayData.content}`);
             hasContent = true;
           }
@@ -103,13 +104,13 @@ export function analyseRouter(router: Router) {
       console.log('全部流式内容：', allContent);
 
       // 第四步：保存分析结果到数据库
-      if (allContent && allContent.trim()) {
-        const { error: saveError, result: saveResult } = await analyseService.saveAnalyse(ctx, {
+      if (allContent) {
+        const { error: saveError, result: saveResult } = await analyseService.saveAnalyse(ctx, state.user.id, {
           year: yearNum,
           month: monthNum,
-          analysisContent: allContent,
+          analysisContent: allContent.trim(),
         });
-        
+
         if (saveError) {
           console.error('保存分析结果失败:', saveError);
         } else {
@@ -121,9 +122,8 @@ export function analyseRouter(router: Router) {
       ctx.body = {
         content: allContent,
         fromCache: false,
-        saved: allContent && allContent.trim() ? true : false,
+        saved: !!(allContent?.trim()),
       };
-
     } catch (error: any) {
       if (error instanceof HttpException) {
         throw error;
@@ -150,7 +150,7 @@ export function analyseRouter(router: Router) {
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth() + 1; // getMonth() 返回 0-11
-      
+
       // 确定查询的月份范围
       let maxMonth = 12;
       if (yearNum === currentYear) {
@@ -161,7 +161,7 @@ export function analyseRouter(router: Router) {
 
       // 批量查询所有月份的分析结果
       const analyses = await analyseService.getAllAnalyses(ctx);
-      
+
       if (analyses.error) {
         throw new HttpException(analyses.error.message, HTTP_ERROR, ErrorCode.SERVER_ERROR);
       }
@@ -171,7 +171,7 @@ export function analyseRouter(router: Router) {
 
       // 构建月份映射，确保每个月都有结果
       const monthMap: Record<number, any> = {};
-      
+
       // 初始化所有月份
       for (let month = 1; month <= maxMonth; month++) {
         monthMap[month] = {
@@ -180,7 +180,7 @@ export function analyseRouter(router: Router) {
           content: '',
           hasData: false,
           fromCache: false,
-          message: '该月份没有心情记录，无法进行分析'
+          message: '该月份没有心情记录，无法进行分析',
         };
       }
 
@@ -195,7 +195,7 @@ export function analyseRouter(router: Router) {
             fromCache: true,
             analyseId: analyse.id,
             createdAt: analyse.createdAt,
-            updatedAt: analyse.updatedAt
+            updatedAt: analyse.updatedAt,
           };
         }
       });
@@ -230,10 +230,9 @@ export function analyseRouter(router: Router) {
           monthsWithData,
           monthsWithoutData: maxMonth - monthsWithData,
           monthsFromCache,
-          monthsWithoutCache
-        }
+          monthsWithoutCache,
+        },
       };
-
     } catch (error: any) {
       if (error instanceof HttpException) {
         throw error;
@@ -315,4 +314,4 @@ export function analyseRouter(router: Router) {
 
   //   ctx.body = result;
   // });
-} 
+}

@@ -1,8 +1,4 @@
 import Koa from 'koa';
-import { Op } from 'sequelize';
-import { AnalyseModel, AnalyseCreationAttributes } from '../db/analyse';
-import { HttpException } from '../exceptions/http-exception';
-import { ErrorCode, HTTP_ERROR } from '../constants/code';
 
 interface SaveAnalyseParams {
   year: number;
@@ -19,64 +15,29 @@ class AnalyseService {
   /**
    * 保存心情分析结果
    */
-  async saveAnalyse(ctx: Koa.Context, params: SaveAnalyseParams) {
+  async saveAnalyse(ctx: Koa.Context, userId: number, params: SaveAnalyseParams) {
     try {
       const { db } = ctx.state;
-      const { user } = ctx.state;
       const { year, month, analysisContent } = params;
 
-      // 检查是否已存在该年月的分析记录
-      const existingAnalyse = await db.analyseModule.findOne({
-        where: {
-          userId: user.id,
-          year,
-          month,
-        },
-      });
+      // upsert 会根据唯一索引判断是插入还是更新
+      const [record, created] = await db.analyseModule.upsert({
+        userId,
+        year,
+        month,
+        analysisContent,
+      }, { returning: true });
 
-      if (existingAnalyse) {
-        // 更新现有记录
-        const updatedAnalyse = await db.analyseModule.update(
-          {
-            analysisContent,
-          },
-          {
-            where: {
-              id: existingAnalyse.id,
-            },
-          }
-        );
-
-        return {
-          error: null,
-          result: {
-            id: existingAnalyse.id,
-            year,
-            month,
-            analysisContent,
-            updated: true,
-          },
-        };
-      } else {
-        // 创建新记录
-        const newAnalyse = await db.analyseModule.create({
-          userId: user.id,
+      return {
+        error: null,
+        result: {
+          id: record.id,
           year,
           month,
           analysisContent,
-        });
-
-        return {
-          error: null,
-          result: {
-            id: newAnalyse.id,
-            year,
-            month,
-            analysisContent,
-            updated: false,
-          },
-        };
-      }
+          updated: !created,
+        },
+      };
     } catch (error: any) {
       return {
         error,
@@ -176,4 +137,4 @@ class AnalyseService {
   }
 }
 
-export const analyseService = new AnalyseService(); 
+export const analyseService = new AnalyseService();

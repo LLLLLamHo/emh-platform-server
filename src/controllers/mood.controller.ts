@@ -39,6 +39,7 @@ export function moodRouter(router: Router) {
   // 获取用户心情记录 可以搜索年、月、日不同区间
   router.get(`/${ROUTER_PREFIX}/list`, async (ctx: Koa.Context) => {
     const { year, month, day, image = '0' } = ctx.query;
+    const { state } = ctx;
 
     if (!year) {
       throw new HttpException('Missing year parameter', ErrorCode.MISS_PARAM);
@@ -59,7 +60,7 @@ export function moodRouter(router: Router) {
       throw new HttpException('Invalid day parameter', ErrorCode.MISS_PARAM);
     }
 
-    const { error, result } = await moodService.getMoodList(ctx, {
+    const { error, result } = await moodService.getMoodList(ctx, state.user.id, {
       year: yearNum,
       month: monthNum,
       day: dayNum,

@@ -1,5 +1,5 @@
-import { Model, DataTypes, ModelCtor } from 'sequelize';
-import { Sequelize } from 'sequelize';
+import { Model, DataTypes, Sequelize, Optional } from 'sequelize';
+import { TABLE_NAME as USER_TABEL_NAME } from './user';
 
 export const TABLE_NAME = 'analyse_result';
 
@@ -8,27 +8,15 @@ export interface AnalyseResultAttributes {
   userId: number;
   year: number;
   month: number;
-  status: 'success' | 'failed'; // 分析结果状态
-  errorMessage?: string; // 失败时的错误信息
-  analysisContent?: string; // 成功时的分析内容
+  status: 'success' | 'empty' | 'failed'; // 分析结果状态
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface AnalyseResultCreationAttributes extends Omit<AnalyseResultAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+export type AnalyseResultCreationAttributes = Optional<AnalyseResultAttributes, 'id' | 'createdAt' | 'updatedAt'>;
 
-export class AnalyseResultModel extends Model<AnalyseResultAttributes, AnalyseResultCreationAttributes> {
-  public id!: number;
-  public userId!: number;
-  public year!: number;
-  public month!: number;
-  public status!: 'success' | 'failed';
-  public errorMessage?: string;
-  public analysisContent?: string;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
-
-  static initModel(sequelize: Sequelize): ModelCtor<AnalyseResultModel> {
+export class AnalyseResultModel extends Model<AnalyseResultAttributes, AnalyseResultCreationAttributes> implements AnalyseResultAttributes {
+  static async initModel(sequelize: Sequelize): Promise<typeof AnalyseResultModel> {
     AnalyseResultModel.init(
       {
         id: {
@@ -40,6 +28,10 @@ export class AnalyseResultModel extends Model<AnalyseResultAttributes, AnalyseRe
           type: DataTypes.INTEGER,
           allowNull: false,
           comment: '用户ID',
+          references: {
+            model: USER_TABEL_NAME,
+            key: 'id',
+          },
         },
         year: {
           type: DataTypes.INTEGER,
@@ -52,29 +44,9 @@ export class AnalyseResultModel extends Model<AnalyseResultAttributes, AnalyseRe
           comment: '月份 (1-12)',
         },
         status: {
-          type: DataTypes.ENUM('success', 'failed'),
+          type: DataTypes.ENUM('success', 'failed', 'empty'),
           allowNull: false,
           comment: '分析结果状态',
-        },
-        errorMessage: {
-          type: DataTypes.TEXT,
-          allowNull: true,
-          comment: '失败时的错误信息',
-        },
-        analysisContent: {
-          type: DataTypes.TEXT,
-          allowNull: true,
-          comment: '成功时的分析内容',
-        },
-        createdAt: {
-          type: DataTypes.DATE,
-          allowNull: false,
-          defaultValue: DataTypes.NOW,
-        },
-        updatedAt: {
-          type: DataTypes.DATE,
-          allowNull: false,
-          defaultValue: DataTypes.NOW,
         },
       },
       {
@@ -100,9 +72,18 @@ export class AnalyseResultModel extends Model<AnalyseResultAttributes, AnalyseRe
             name: 'idx_status',
           },
         ],
-      }
+      },
     );
 
+    await AnalyseResultModel.sync();
     return AnalyseResultModel;
   }
-} 
+
+  public id!: number;
+  public userId!: number;
+  public year!: number;
+  public month!: number;
+  public status!: 'success' | 'empty' | 'failed';
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}

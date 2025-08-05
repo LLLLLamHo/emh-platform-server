@@ -96,10 +96,9 @@ class MoodService {
   /**
    * 获取用户心情记录
    */
-  async getMoodList(ctx: Koa.Context, params: GetMoodListParams, getImages = false) {
+  async getMoodList(ctx: Koa.Context, userId: number,  params: GetMoodListParams, getImages = false) {
     try {
       const { db } = ctx.state;
-      const { user } = ctx.state;
 
       // 计算时间戳范围
       const { startTimestamp, endTimestamp } = getUTCTimeRange(params.year, params.month, params.day);
@@ -107,7 +106,7 @@ class MoodService {
       // 获取该时间范围内的所有心情记录
       const moods = await db.moodModule.findAll({
         where: {
-          userId: user.id,
+          userId,
           timestamp: {
             [Op.between]: [startTimestamp, endTimestamp],
           },
