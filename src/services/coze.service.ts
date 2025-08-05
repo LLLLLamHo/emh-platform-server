@@ -86,14 +86,14 @@ class CozeService {
                 messageOrder.push(messageId);
               }
               
-              if (messageMap.has(messageId)) {
-                // 如果消息已存在，说明这是 delta 更新，需要累积内容
-                const existingContent = messageMap.get(messageId) || '';
-                messageMap.set(messageId, existingContent + jsonData.content);
-              } else {
-                // 新消息，直接设置内容
+              // if (messageMap.has(messageId)) {
+              //   // 如果消息已存在，说明这是 delta 更新，需要累积内容
+              //   const existingContent = messageMap.get(messageId) || '';
+              //   messageMap.set(messageId, existingContent + jsonData.content);
+              // } else {
+              //   // 新消息，直接设置内容
                 messageMap.set(messageId, jsonData.content);
-              }
+              // }
             }
           } catch (error) {
             console.log('解析 JSON 失败:', match[1]);
