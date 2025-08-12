@@ -4,6 +4,7 @@ import { loginRouter } from './controllers/login.controller';
 import { moodRouter } from './controllers/mood.controller';
 import { analyseRouter } from './controllers/analyse.controller';
 import { skinRouter } from './controllers/skin.controller';
+import { globalConfigRouter } from './controllers/global-config.controller';
 
 
 export function registerRouter() {
@@ -14,6 +15,7 @@ export function registerRouter() {
   moodRouter(router);
   analyseRouter(router);
   skinRouter(router);
+  globalConfigRouter(router);
 
   return router;
 }

@@ -6,6 +6,7 @@ import { MemberModel } from './member';
 import { SkinModel } from './skin';
 import { AnalyseModel } from './analyse';
 import { AnalyseResultModel } from './analyse-result';
+import { GlobalConfigModel } from './global-config';
 
 
 export type DB = {
@@ -16,6 +17,7 @@ export type DB = {
   moodImageModule: ModelCtor<MoodImageModel>;
   analyseModule: ModelCtor<AnalyseModel>;
   analyseResultModule: ModelCtor<AnalyseResultModel>;
+  globalConfigModule: ModelCtor<GlobalConfigModel>;
   sequelize: Sequelize
 };
 
@@ -41,6 +43,7 @@ export async function initDB(): Promise<DB | undefined> {
     const skinModule = await SkinModel.initModel(sequelize);
     const analyseModule = await AnalyseModel.initModel(sequelize);
     const analyseResultModule = await AnalyseResultModel.initModel(sequelize);
+    const globalConfigModule = await GlobalConfigModel.initModel(sequelize);
 
 
     // 关联用户表和心情表
@@ -57,6 +60,7 @@ export async function initDB(): Promise<DB | undefined> {
       skinModule,
       analyseModule,
       analyseResultModule,
+      globalConfigModule,
       sequelize,
     };
   } catch (error) {
