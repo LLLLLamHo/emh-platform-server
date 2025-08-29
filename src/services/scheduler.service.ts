@@ -32,8 +32,8 @@ class SchedulerService {
             user,
           },
         };
-        const success  = await this.generateMonthlyAnalysis(newContext, user.id, year, month);
-        if (success) {
+        const { result }  = await this.generateMonthlyAnalysis(newContext, user.id, year, month);
+        if (result) {
           console.log(`[analyse定时任务] 用户 ${user.id} ${year}年${month}月 分析成功`);
         } else {
           console.log(`[analyse定时任务] 用户 ${user.id} ${year}年${month}月 分析失败`);
@@ -71,8 +71,8 @@ class SchedulerService {
             db: ctx.state.db,
           },
         };
-        const success  = await this.generateMonthlyAnalysis(newContext, failAnalysis.userId, failAnalysis.year, failAnalysis.month);
-        if (success) {
+        const { result }  = await this.generateMonthlyAnalysis(newContext, failAnalysis.userId, failAnalysis.year, failAnalysis.month);
+        if (result) {
           console.log(`[analyse result定时任务] 用户 ${failAnalysis.userId} ${failAnalysis.year}年${failAnalysis.month}月 分析成功`);
         } else {
           console.log(`[analyse result定时任务] 用户 ${failAnalysis.userId} ${failAnalysis.year}年${failAnalysis.month}月 分析失败`);
@@ -88,6 +88,104 @@ class SchedulerService {
     }
 
     console.log('[analyse result定时任务] 所有用户执行完成');
+  }
+
+  /**
+   * 为指定用户生成指定月份的心情分析
+   */
+  async generateMonthlyAnalysis(ctx: any, userId: number, year: number, month: number): Promise<{content: string, result: boolean}> {
+    try {
+      // 获取该月份的心情数据
+      const { error, result } = await moodService.getMoodList(ctx, userId, {
+        year,
+        month,
+      }, false);
+
+      if (error) {
+        console.error(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 获取心情数据失败:`, error);
+        // 记录失败结果
+        await analyseResultService.saveAnalyseResult(ctx, {
+          userId,
+          year,
+          month,
+          status: 'failed',
+        });
+        return { result: false, content: '' };
+      }
+
+      // 处理数据格式转换
+      const { processedData, hasContent } = this.processMoodData(result, month);
+
+      // 检查是否有心情记录内容
+      if (!hasContent) {
+        console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 没有心情记录，跳过 AI 分析`);
+        // 记录失败结果（无数据）
+        await analyseResultService.saveAnalyseResult(ctx, {
+          userId,
+          year,
+          month,
+          status: 'empty',
+        });
+        return { result: false, content: '' };
+      }
+
+      // 调用 Coze 进行 AI 分析
+      const stream = await cozeService.analyzeMoodStream(ctx, processedData, year, month);
+      let allContent = '';
+      for await (const chunk of cozeService.processStreamResponse(stream)) {
+        allContent += chunk;
+      }
+      console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 分析完成:`, `${allContent.substring(0, 100)}...`);
+
+      // 保存分析结果到数据库
+      if (allContent) {
+        const { error: saveError, result: saveResult } = await analyseService.saveAnalyse(ctx, userId, {
+          year,
+          month,
+          analysisContent: allContent.trim(),
+        });
+
+        if (saveError) {
+          console.error(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 保存分析结果失败:`, saveError);
+          // 记录失败结果
+          await analyseResultService.saveAnalyseResult(ctx, {
+            userId,
+            year,
+            month,
+            status: 'failed',
+          });
+          return { result: false, content: '' };
+        }
+        console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 分析结果已保存:`, saveResult);
+        // 记录成功结果
+        await analyseResultService.saveAnalyseResult(ctx, {
+          userId,
+          year,
+          month,
+          status: 'success',
+        });
+        return { result: true, content: allContent };
+      }
+      // 记录失败结果（AI 分析内容为空）
+      console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月, AI 分析结果为空`);
+      await analyseResultService.saveAnalyseResult(ctx, {
+        userId,
+        year,
+        month,
+        status: 'failed',
+      });
+      return { result: false, content: '' };
+    } catch (error: any) {
+      console.error(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 分析失败:`, error);
+      // 记录失败结果
+      await analyseResultService.saveAnalyseResult(ctx, {
+        userId,
+        year,
+        month,
+        status: 'failed',
+      });
+      return { result: false, content: '' };
+    }
   }
 
   private async getFailAnalysisListForPage(db: DB, page = 0, pageSize = 100) {
@@ -145,104 +243,6 @@ class SchedulerService {
       month = 12;
     }
     return { year, month };
-  }
-
-  /**
-   * 为指定用户生成指定月份的心情分析
-   */
-  private async generateMonthlyAnalysis(ctx: any, userId: number, year: number, month: number): Promise<boolean> {
-    try {
-      // 获取该月份的心情数据
-      const { error, result } = await moodService.getMoodList(ctx, userId, {
-        year,
-        month,
-      }, false);
-
-      if (error) {
-        console.error(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 获取心情数据失败:`, error);
-        // 记录失败结果
-        await analyseResultService.saveAnalyseResult(ctx, {
-          userId,
-          year,
-          month,
-          status: 'failed',
-        });
-        return false;
-      }
-
-      // 处理数据格式转换
-      const { processedData, hasContent } = this.processMoodData(result, month);
-
-      // 检查是否有心情记录内容
-      if (!hasContent) {
-        console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 没有心情记录，跳过 AI 分析`);
-        // 记录失败结果（无数据）
-        await analyseResultService.saveAnalyseResult(ctx, {
-          userId,
-          year,
-          month,
-          status: 'empty',
-        });
-        return false;
-      }
-
-      // 调用 Coze 进行 AI 分析
-      const stream = await cozeService.analyzeMoodStream(ctx, processedData, year, month);
-      let allContent = '';
-      for await (const chunk of cozeService.processStreamResponse(stream)) {
-        allContent += chunk;
-      }
-      console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 分析完成:`, `${allContent.substring(0, 100)}...`);
-
-      // 保存分析结果到数据库
-      if (allContent) {
-        const { error: saveError, result: saveResult } = await analyseService.saveAnalyse(ctx, userId, {
-          year,
-          month,
-          analysisContent: allContent.trim(),
-        });
-
-        if (saveError) {
-          console.error(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 保存分析结果失败:`, saveError);
-          // 记录失败结果
-          await analyseResultService.saveAnalyseResult(ctx, {
-            userId,
-            year,
-            month,
-            status: 'failed',
-          });
-          return false;
-        }
-        console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 分析结果已保存:`, saveResult);
-        // 记录成功结果
-        await analyseResultService.saveAnalyseResult(ctx, {
-          userId,
-          year,
-          month,
-          status: 'success',
-        });
-        return true;
-      }
-      // 记录失败结果（AI 分析内容为空）
-      console.log(`[analyse定时任务] 用户 ${userId} ${year}年${month}月, AI 分析结果为空`);
-      await analyseResultService.saveAnalyseResult(ctx, {
-        userId,
-        year,
-        month,
-        status: 'failed',
-      });
-      return false;
-    } catch (error: any) {
-      console.error(`[analyse定时任务] 用户 ${userId} ${year}年${month}月 分析失败:`, error);
-      // 记录失败结果
-      await analyseResultService.saveAnalyseResult(ctx, {
-        userId,
-        year,
-        month,
-        status: 'failed',
-      });
-      return false;
-    }
   }
 }
 

@@ -356,16 +356,16 @@ export function analyseRouter(router: Router) {
       };
 
       // 调用调度器服务生成分析
-      const success = await schedulerService['generateMonthlyAnalysis'](newContext, targetUserId, yearNum, monthNum);
+      const { result, content } = await schedulerService.generateMonthlyAnalysis(newContext, targetUserId, yearNum, monthNum);
 
-      if (success) {
+      if (result) {
         ctx.body = {
           success: true,
           message: `用户 ${targetUserId} ${yearNum}年${monthNum}月 分析生成成功`,
           data: {
-            userId: targetUserId,
             year: yearNum,
             month: monthNum,
+            content,
             status: 'success',
           },
         };
@@ -374,15 +374,15 @@ export function analyseRouter(router: Router) {
           success: false,
           message: `用户 ${targetUserId} ${yearNum}年${monthNum}月 分析生成失败`,
           data: {
-            userId: targetUserId,
             year: yearNum,
             month: monthNum,
+            content,
             status: 'failed',
           },
         };
       }
     } catch (error: any) {
-      console.error(`[测试接口] 生成分析失败:`, error);
+      console.error('[测试接口] 生成分析失败:', error);
       if (error instanceof HttpException) {
         throw error;
       }
