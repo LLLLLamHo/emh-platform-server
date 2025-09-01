@@ -6,29 +6,10 @@ import { ErrorCode, HTTP_ERROR } from '../constants/code';
 
 class CozeService {
   private readonly baseUrl = 'https://api.coze.cn/v3';
-  private readonly authToken = 'pat_0GsD8tD8u4JEf8uFj4klE7SrCfRfvMS1t95MnudjxIpVWuxvImvahyOZqobCJL7C';
+  private readonly authToken = 'cztei_hzni4AfwoLi7IV3FhhnaBbbTgXqxdYkxN3PSp3hXpV1euhs1t0fKDHJ2y7gMvvTOR';
   private readonly botId = '7530098047934955574';
   private readonly useId = '123456789';
 
-  /**
-   * 构建分析请求体
-   */
-  private buildAnalysisRequest(content: string, stream = true) {
-    return {
-      bot_id: this.botId,
-      user_id: this.useId,
-      stream,
-      additional_messages: [
-        {
-          content,
-          content_type: 'text',
-          role: 'user',
-          type: 'question',
-        },
-      ],
-      parameters: {},
-    };
-  }
 
   /**
    * 流式分析心情数据（推荐方式）
@@ -73,26 +54,26 @@ class CozeService {
       stream.on('data', (chunk: Buffer) => {
         const text = chunk.toString('utf8');
         const match = text.match(/data:(\{.*\})/);
-        if(match){
+        if (match) {
           try {
             const jsonData = JSON.parse(match[1]);
-            
+
             // 只处理 answer 类型的文本消息
-            if (jsonData.type === 'answer' && jsonData.content_type === 'text' && jsonData.role ==='assistant') {
+            if (jsonData.type === 'answer' && jsonData.content_type === 'text' && jsonData.role === 'assistant') {
               const messageId = jsonData.id;
-              
+
               // 记录消息 ID 的首次出现顺序
               if (!messageOrder.includes(messageId)) {
                 messageOrder.push(messageId);
               }
-              
+
               // if (messageMap.has(messageId)) {
               //   // 如果消息已存在，说明这是 delta 更新，需要累积内容
               //   const existingContent = messageMap.get(messageId) || '';
               //   messageMap.set(messageId, existingContent + jsonData.content);
               // } else {
               //   // 新消息，直接设置内容
-                messageMap.set(messageId, jsonData.content);
+              messageMap.set(messageId, jsonData.content);
               // }
             }
           } catch (error) {
@@ -107,7 +88,7 @@ class CozeService {
           .map(id => messageMap.get(id))
           .filter(content => content) // 过滤掉 undefined
           .join('\n\n');
-        
+
         resolve(allContent);
       });
 
@@ -152,6 +133,26 @@ class CozeService {
   //     throw new HttpException(`Coze API request failed: ${error.message}`, HTTP_ERROR, ErrorCode.SERVER_ERROR);
   //   }
   // }
+
+  /**
+   * 构建分析请求体
+   */
+  private buildAnalysisRequest(content: string, stream = true) {
+    return {
+      bot_id: this.botId,
+      user_id: this.useId,
+      stream,
+      additional_messages: [
+        {
+          content,
+          content_type: 'text',
+          role: 'user',
+          type: 'question',
+        },
+      ],
+      parameters: {},
+    };
+  }
 }
 
 export const cozeService = new CozeService();

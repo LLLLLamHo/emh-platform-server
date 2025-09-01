@@ -3,6 +3,7 @@ import Router from 'koa-router';
 import { moodService } from '../services/mood.service';
 import { cozeService } from '../services/coze.service';
 import { analyseService } from '../services/analyse.service';
+import { schedulerService } from '../services/scheduler.service';
 import { HttpException } from '../exceptions/http-exception';
 import { ErrorCode, HTTP_ERROR } from '../constants/code';
 
@@ -314,4 +315,78 @@ export function analyseRouter(router: Router) {
 
   //   ctx.body = result;
   // });
+
+  // 测试接口：手动触发生成指定月份的分析
+  router.post(`/${ROUTER_PREFIX}/test-generate`, async (ctx: Koa.Context) => {
+    const body = ctx.request.body as { year?: string | number; month?: string | number; userId?: string | number };
+    const { year, month, userId } = body;
+    const { state } = ctx;
+
+    if (!year || !month) {
+      throw new HttpException('Missing year or month parameter', ErrorCode.MISS_PARAM);
+    }
+
+    const yearNum = parseInt(year.toString(), 10);
+    const monthNum = parseInt(month.toString(), 10);
+
+    if (isNaN(yearNum) || isNaN(monthNum)) {
+      throw new HttpException('Invalid year or month parameter', ErrorCode.MISS_PARAM);
+    }
+
+    if (monthNum < 1 || monthNum > 12) {
+      throw new HttpException('Invalid month parameter (1-12)', ErrorCode.MISS_PARAM);
+    }
+
+    // 如果没有指定用户ID，使用当前登录用户
+    const targetUserId = userId ? parseInt(userId.toString(), 10) : state.user.id;
+
+    if (isNaN(targetUserId)) {
+      throw new HttpException('Invalid userId parameter', ErrorCode.MISS_PARAM);
+    }
+
+    try {
+      console.log(`[测试接口] 开始为用户 ${targetUserId} 生成 ${yearNum}年${monthNum}月 的分析`);
+
+      // 创建新的上下文对象
+      const newContext = {
+        state: {
+          db: ctx.state.db,
+          user: { id: targetUserId },
+        },
+      };
+
+      // 调用调度器服务生成分析
+      const { result, content } = await schedulerService.generateMonthlyAnalysis(newContext, targetUserId, yearNum, monthNum);
+
+      if (result) {
+        ctx.body = {
+          success: true,
+          message: `用户 ${targetUserId} ${yearNum}年${monthNum}月 分析生成成功`,
+          data: {
+            year: yearNum,
+            month: monthNum,
+            content,
+            status: 'success',
+          },
+        };
+      } else {
+        ctx.body = {
+          success: false,
+          message: `用户 ${targetUserId} ${yearNum}年${monthNum}月 分析生成失败`,
+          data: {
+            year: yearNum,
+            month: monthNum,
+            content,
+            status: 'failed',
+          },
+        };
+      }
+    } catch (error: any) {
+      console.error('[测试接口] 生成分析失败:', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException('Test generate analysis failed', HTTP_ERROR, ErrorCode.SERVER_ERROR);
+    }
+  });
 }
