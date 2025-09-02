@@ -23,6 +23,8 @@ export function startScheduler(db: DB) {
     } catch (err) {
       console.error('[analyse定时任务] 执行失败:', err);
     }
+  }, {
+    timezone: 'Asia/Shanghai',
   });
   console.log('[analyse定时任务] 已设置：每个月1号凌晨1点检查并执行月度心情分析任务');
 
@@ -34,6 +36,8 @@ export function startScheduler(db: DB) {
     } catch (err) {
       console.error('[analyse result定时任务] 执行失败:', err);
     }
+  }, {
+    timezone: 'Asia/Shanghai',
   });
   console.log('[analyse result定时任务] 已设置：每天早上6点检查存在的错误分析记录，并尝试重新执行');
 }
