@@ -40,8 +40,4 @@ export function startScheduler(db: DB) {
     timezone: 'Asia/Shanghai',
   });
   console.log('[analyse result定时任务] 已设置：每天早上6点检查存在的错误分析记录，并尝试重新执行');
-
-  setTimeout(() => {
-    retryFailedAnalysis(mockContext);
-  }, 6000);
 }
