@@ -5,25 +5,24 @@ import { HttpException } from '../exceptions/http-exception';
 import { ErrorCode, HTTP_ERROR } from '../constants/code';
 
 class CozeService {
-  private readonly baseUrl = 'https://api.coze.cn/v3';
-  private readonly authToken = 'cztei_hzni4AfwoLi7IV3FhhnaBbbTgXqxdYkxN3PSp3hXpV1euhs1t0fKDHJ2y7gMvvTOR';
-  private readonly botId = '7530098047934955574';
-  private readonly useId = '123456789';
-
-
   /**
    * 流式分析心情数据（推荐方式）
    * 实时返回 AI 分析结果，类似打字机效果
    */
   async analyzeMoodStream(ctx: Koa.Context, moodData: any, year: number, month: number): Promise<Readable> {
     const analysisContent = `请分析以下${year}年${month}月的心情数据，给出详细的心情分析和建议：${JSON.stringify(moodData)}`;
+    const { COZE_BASE_URL = 'https://api.coze.cn/v3', COZE_AUTH_TOKEN } = process.env;
 
     try {
+      if (!COZE_AUTH_TOKEN) {
+        throw new HttpException('Miss Coze auth token', HTTP_ERROR, ErrorCode.SERVER_ERROR);
+      }
+
       const response = await axios({
         method: 'POST',
-        url: `${this.baseUrl}/chat`,
+        url: `${COZE_BASE_URL}/chat`,
         headers: {
-          Authorization: `Bearer ${this.authToken}`,
+          Authorization: `Bearer ${COZE_AUTH_TOKEN}`,
           'Content-Type': 'application/json',
         },
         data: this.buildAnalysisRequest(analysisContent, true),
@@ -138,9 +137,15 @@ class CozeService {
    * 构建分析请求体
    */
   private buildAnalysisRequest(content: string, stream = true) {
+    const { COZE_BOT_ID, COZE_USE_ID } = process.env;
+
+    if (!COZE_BOT_ID || !COZE_USE_ID) {
+      throw Error('Miss COZE_BOT_ID or COZE_USE_ID'!);
+    }
+
     return {
-      bot_id: this.botId,
-      user_id: this.useId,
+      bot_id: COZE_BOT_ID,
+      user_id: COZE_USE_ID,
       stream,
       additional_messages: [
         {
